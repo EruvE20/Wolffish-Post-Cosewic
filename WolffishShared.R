@@ -405,6 +405,62 @@ georges_lengths %>%
 
 
 
+#REDFISH
+redfish <- read.csv("spring4VsW.csv", header = T) %>%
+  select(-X)
+redfish_lengths <- read.csv("redfish_lengths.csv", header = T) %>% 
+  select(-X)
+redfish_null <- read.csv("redfish_null.csv", header = T) %>% 
+  select(-X)
+
+
+#Frequency of occurrence:
+propcatch_redfish <- redfish_null %>% 
+  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
+  select(YEAR, SETNO, wolf) %>% 
+  group_by(YEAR, wolf) %>% 
+  summarise (n = n()) %>% 
+  group_by(YEAR) %>% 
+  mutate(total = sum(n)) %>% 
+  filter(wolf=="Y") %>% 
+  mutate(proportion = 100*(n/total)) 
+
+propcatch_redfish %>%
+  ggplot(propcatch_redfish, mapping = aes(YEAR, proportion)) +
+  geom_bar(stat="identity") +
+  theme_classic()
+
+#Frequency of lengths 
+redfish_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15))
+
+#Abundance 
+redfish_lengths <- redfish_lengths %>% 
+  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature'))
+
+redfish_lengths %>% 
+  group_by(YEAR, maturity) %>% 
+  drop_na(maturity) %>%
+  summarize(abundance = length(FLEN)) %>% 
+  ggplot(aes(x=YEAR, y=abundance, col=maturity))+
+  geom_point()+
+  geom_line()+
+  geom_smooth(method = "loess", se = FALSE, size = 2) +
+  labs(y="Abundance (number at length)", x='Year)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15))
+
+
+
+
+
+
 #distribution maps
 aggregator = function(df = NULL,
                       lat.field = "LATITUDE",
@@ -466,55 +522,24 @@ mature30 <- ggplot() +
 
 
 # ISDB Database ---------------------------------------------------------
-
-redfish <- read.csv("spring4VsW.csv", header = T) %>%
+isdb <- read.csv("isdb.csv", header = T) %>%
   select(-X)
-redfish_lengths <- read.csv("redfish_lengths.csv", header = T) %>% 
+isdb_lengths <- read.csv("isdb_lengths.csv", header = T) %>%
   select(-X)
-redfish_null <- read.csv("redfish_null.csv", header = T) %>% 
+isdb_null <- read.csv("isdb_null.csv", header = T) %>%
   select(-X)
 
-#Frequency of occurrence:
-propcatch_redfish <- redfish_null %>% 
-  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
-  select(YEAR, SETNO, wolf) %>% 
-  group_by(YEAR, wolf) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf=="Y") %>% 
-  mutate(proportion = 100*(n/total)) 
-
-propcatch_redfish %>%
-  ggplot(propcatch_redfish, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
-
-#Frequency of lengths 
-redfish_lengths %>% 
-  ggplot(aes(FLEN))+
-  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
-  labs(y="Frequency (count)", x='Length (cm)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
-
-#Abundance 
-
-redfish_lengths <- redfish_lengths %>% 
-  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature'))
-
-redfish_lengths %>% 
-  group_by(YEAR, maturity) %>% 
-  drop_na(maturity) %>%
-  summarize(abundance = length(FLEN)) %>% 
-  ggplot(aes(x=YEAR, y=abundance, col=maturity))+
-  geom_point()+
-  geom_line()+
-  geom_smooth(method = "loess", se = FALSE, size = 2) +
-  labs(y="Abundance (number at length)", x='Year)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
-
-
+#filter out relevant surveys
+ITQ <- isdb %>% filter(TRIPCD_ID == 7051)
+lobster_survey <- isdb %>% filter(TRIPCD_ID == 7065)
+lobster_commercial <- isdb %>% filter(TRIPCD_ID == 2550) 
+sentinel_4VN <- isdb %>% filter(TRIPCD_ID == 7052)
+sentinel_4VSW <- isdb %>% filter(TRIPCD_ID == 7050)
+halibut_observey <- isdb %>% filter(TRIPCD_ID == 30)
+halibut_longline <- isdb %>% filter(TRIPCD_ID == 7057)
+snowcrab <- isdb %>% filter(TRIPCD_ID == 7061)
+redfish <- isdb %>% filter(TRIPCD_ID == 23)
+cod <- isdb %>% filter(TRIPCD_ID == 7001)
+flatfish <- isdb %>% filter(TRIPCD_ID == 49)
+shrimp <- isdb %>% filter(TRIPCD_ID == 2210)
+silverhake <- isdb %>% filter(TRIPCD_ID == 14) 
