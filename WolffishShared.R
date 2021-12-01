@@ -61,6 +61,12 @@ fall_lengths <- read.csv("fall_lengths.csv", header = T) %>%
 fall_null <- read.csv("fall_null.csv", header = T) %>% 
   filter(TYPE == 1) %>% 
   select(-X)
+redfish <- read.csv("redfish.csv", header = T) %>%
+  select(-X)
+redfish_lengths <- read.csv("redfish_lengths.csv", header = T) %>% 
+  select(-X)
+redfish_null <- read.csv("redfish_null.csv", header = T) %>% 
+  select(-X)
 
 
 
@@ -90,121 +96,143 @@ yrcatch_georges <- georges %>%
   group_by(YEAR) %>% 
   summarise (n = n())
 
-
 yrcatch_summer <- summer %>% 
   select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
   summarise (n = n())
 
-#frequency of occurrence --------------------------------------
-
-#4VsW frequency of occurrence with bargraph 
-
-propcatch_spring4VsW <- spring4VsW_null %>% 
-  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
-  select(YEAR, SETNO, wolf) %>% 
-  group_by(YEAR, wolf) %>% 
-  summarise (n = n()) %>% 
+yrcatch_redfish <- redfish %>% 
+  select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf=="Y") %>% 
-  mutate(proportion = 100*(n/total)) 
-
-propcatch_spring4VsW %>%
-  ggplot(propcatch_spring4VsW, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
-
-#frequency for occurrence of 4x spring RV survey
-
-propcatch_spring4x <- spring4X_null %>% 
-  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
-  select(YEAR, SETNO, CODE, wolf) %>% 
-  group_by(YEAR, wolf) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf=="Y") %>% 
-  mutate(proportion = 100*(n/total))
-
-propcatch_spring4x %>%
-  ggplot(propcatch_spring4x, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
+  summarise (n = n())
 
 
-#frequency for occurrence of the spring RV survey
+#Frequencies of Occurence
+#GROUP ALL DATA
+spring4VsW$SURVEY <- "4VsW"
+spring4X$SURVEY <- "4X"
+georges$SURVEY <- "Georges Bank"
+spring$SURVEY <- "Spring"
+summer$SURVEY <- "Summer"
+fall$SURVEY <- "Fall"
+redfish$SURVEY <- "Redfish"
 
-propcatch_spring <- spring_null %>% 
-  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
-  select(YEAR, SETNO, CODE, wolf) %>% 
-  group_by(YEAR, wolf) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf=="Y") %>% 
-  mutate(proportion = 100*(n/total))
+a <- spring4VsW %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
-propcatch_spring %>%
-  ggplot(propcatch_spring, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
-  
-#Frequency of occurrence for fall RV survey 
+b <- spring4X %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
+c <- georges %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
-propcatch_fall <- fall_null %>% 
-  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
-  select(YEAR, SETNO, CODE, wolf) %>% 
-  group_by(YEAR, wolf) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf=="Y") %>% 
-  mutate(proportion = 100*(n/total))
+d <- spring %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
-propcatch_fall %>%
-  ggplot(propcatch_fall, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
+e <- summer %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
-#Frequency for occurrence of summer RV survey
+f <- fall %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
-propcatch_summer <- summer_null %>% 
-  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
-  select(YEAR, SETNO, CODE, wolf) %>% 
-  group_by(YEAR, wolf) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf=="Y") %>% 
-  mutate(proportion = 100*(n/total))
-
-propcatch_summer %>%
-  ggplot(propcatch_summer, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
+g <- redfish %>% 
+  filter(XTYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
 
-#frequency of occurrence of georges bank 
-propcatch_georges <- georges_null %>% 
-  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
-  select(YEAR, SETNO, CODE, wolf) %>% 
-  group_by(YEAR, wolf) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf=="Y") %>% 
-  mutate(proportion = 100*(n/total))
+rv <- rbind(a,b,c,d,e,f,g)
 
-propcatch_georges %>%
-  ggplot(propcatch_georges, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
+
+
+#full nulls
+spring4VsW_null$SURVEY <- "4VsW"
+spring4X_null$SURVEY <- "4X"
+georges_null$SURVEY <- "Georges Bank"
+spring_null$SURVEY <- "Spring"
+summer_null$SURVEY <- "Summer"
+fall_null$SURVEY <- "Fall"
+redfish_null$SURVEY <- "Redfish"
+
+
+a <- spring4VsW_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+b <- spring4X_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+c <- georges_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+d <- spring_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+e <- summer_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+f <- fall_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+g <- redfish_null %>% 
+  filter(XTYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+
+rv_null <- rbind(a,b,c,d,e,f,g)
+
+
+
+#summarize sets
+rv_summary <- rv %>% 
+  group_by(SURVEY, MISSION) %>% 
+  summarise(sets = length(unique(SETNO))) %>% 
+  group_by(SURVEY) %>% 
+  summarise(sets=sum(sets))
+
+rv_null_summary <- rv_null %>%
+  group_by(SURVEY, MISSION) %>% 
+  summarise(nullsets = length(unique(SETNO))) %>% 
+  group_by(SURVEY) %>% 
+  summarise(nullsets=sum(nullsets))
+
+rv_summary <- left_join(rv_summary, rv_null_summary, by="SURVEY") %>% 
+  mutate(occurance = 100*(sets/nullsets))
+
+
+
+#Annual
+rv_summary <- rv %>% 
+  group_by(SURVEY, YEAR) %>% 
+  summarise(sets = length(unique(SETNO)))
+
+rv_null_summary <- rv_null %>%
+  group_by(SURVEY, YEAR) %>% 
+  summarise(nullsets = length(unique(SETNO)))
+
+rv_summary <- left_join(rv_summary, rv_null_summary, by=c("SURVEY", "YEAR")) %>% 
+  mutate(occurance = 100*(sets/nullsets))
+
+ggplot(rv_summary, aes(YEAR, occurance, colour=SURVEY))+
+  geom_line()+
+  theme_classic()+
+  facet_wrap(~SURVEY, scales = "free_x")
+
+
+
 
 
 #length frequency distributions ---------------------------------------
-
 #SPRING 4VSW
 spring4VsW_lengths %>% 
   ggplot(aes(FLEN))+
@@ -258,11 +286,20 @@ summer_lengths %>%
   theme(text = element_text(size=15),
         axis.text = element_text(size=15))
 
+#REDFISH 
+redfish_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15))
+
 
 #abundance of mature vs immature ---------------------------------------------
-
-
 #GEOM_SMOOTH + geom_point 
+
+#SPRING 4VSW
 spring4VsW_lengths <- spring4VsW_lengths %>% 
   mutate(maturity = ifelse(FLEN <53, 'immature', 'mature'))
 
@@ -278,7 +315,6 @@ spring4VsW_lengths %>%
   theme_classic()+
   theme(text = element_text(size=15),
         axis.text = element_text(size=15))
-
 
 
 #SPRING 4X
@@ -320,7 +356,6 @@ spring_lengths %>%
   theme_classic()+
   theme(text = element_text(size=15),
         axis.text = element_text(size=15))
-
 
 
 # Fall 
@@ -464,44 +499,7 @@ p1 <- summer_all_lengths + geom_text(x = 25, y = 300, label = lm_eqn(df), parse 
 
 
 
-
-
-
-#REDFISH ------
-redfish <- read.csv("spring4VsW.csv", header = T) %>%
-  select(-X)
-redfish_lengths <- read.csv("redfish_lengths.csv", header = T) %>% 
-  select(-X)
-redfish_null <- read.csv("redfish_null.csv", header = T) %>% 
-  select(-X)
-
-
-#Frequency of occurrence:
-propcatch_redfish <- redfish_null %>% 
-  mutate(wolf = ifelse(CODE==50, 'Y', "N")) %>% 
-  select(YEAR, SETNO, wolf) %>% 
-  group_by(YEAR, wolf) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf=="Y") %>% 
-  mutate(proportion = 100*(n/total)) 
-
-propcatch_redfish %>%
-  ggplot(propcatch_redfish, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
-
-#Frequency of lengths 
-redfish_lengths %>% 
-  ggplot(aes(FLEN))+
-  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
-  labs(y="Frequency (count)", x='Length (cm)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
-
-#Abundance 
+#Redfish 
 redfish_lengths <- redfish_lengths %>% 
   mutate(maturity = ifelse(FLEN <53, 'immature', 'mature'))
 
@@ -519,6 +517,7 @@ redfish_lengths %>%
         axis.text = element_text(size=15))
 
 
+
 # ISDB Database ---------------------------------------------------------
 isdb <- read.csv("isdb.csv", header = T) %>%
   select(-X)
@@ -529,18 +528,188 @@ isdb_null <- read.csv("isdb_null.csv", header = T) %>%
 str(isdb_null)
 
 #filter out relevant surveys
-ITQ <- isdb %>% filter(TRIPCD_ID == 7051)
-lobster_survey <- isdb_null %>% filter(TRIPCD_ID == 7065)
 lobster_commercial <- isdb %>% filter(TRIPCD_ID == 2550) 
-sentinel_4VN <- isdb %>% filter(TRIPCD_ID == 7052)
-sentinel_4VSW <- isdb %>% filter(TRIPCD_ID == 7050)
-halibut_observer <- isdb %>% filter(TRIPCD_ID == 30)
-halibut_longline <- isdb %>% filter(TRIPCD_ID == 7057)
-snowcrab <- isdb %>% filter(TRIPCD_ID == 7061)
 redfish <- isdb %>% filter(TRIPCD_ID == 23)
 cod <- isdb %>% filter(TRIPCD_ID == 7001)
 flatfish <- isdb %>% filter(TRIPCD_ID == 49)
 shrimp <- isdb %>% filter(TRIPCD_ID == 2210)
+silverhake <- isdb %>% filter(TRIPCD_ID == 14)
+
+
+#Halibut Industry Longline Survey
+halibut_longline <- isdb %>% filter(TRIPCD_ID == 7057)
+unique(halibut_longline$SET_TYPE)
+
+halibut_longline %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+halibut_fixed <- halibut_longline %>% 
+  filter(SETCD_ID == 4)
+
+
+#4VSW Setinel Survey
+sentinel <- isdb %>% filter(TRIPCD_ID == 7050)
+unique(sentinel$SET_TYPE)
+
+sentinel %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+sentinel <- sentinel %>% 
+  filter(SETCD_ID == 5)
+
+                     
+#ITQ
+ITQ <- isdb %>% filter(TRIPCD_ID == 7051)
+unique(ITQ$SET_TYPE)
+
+ITQ %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+ITQ <- ITQ %>% 
+  filter(SETCD_ID == 4)
+
+
+#LOBSTER
+lobster <- isdb %>% filter(TRIPCD_ID == 7065)
+unique(lobster$SET_TYPE)
+
+
+#SNOWCRAB
+snowcrab <- isdb %>% filter(TRIPCD_ID == 7061)
+unique(snowcrab$SET_TYPE)
+
+snowcrab %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+snowcrab <- snowcrab %>% 
+  filter(SETCD_ID == 4)
+
+
+
+
+#NULL SURVEYS
+#Halibut Industry Longline Survey
+halibut_longline_null <- isdb_null %>% filter(TRIPCD_ID == 7057)
+unique(halibut_longline_null$SET_TYPE)
+
+halibut_longline_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+halibut_fixed_null <- halibut_longline_null %>% 
+  filter(SETCD_ID == 4)
+
+unique(halibut_fixed_null$SET_TYPE)
+
+
+#4VSW Setinel Survey
+sentinel_null <- isdb_null %>% filter(TRIPCD_ID == 7050)
+unique(sentinel_null$SET_TYPE)
+
+sentinel_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+sentinel_null <- sentinel_null %>% 
+  filter(SETCD_ID == 5)
+
+
+#ITQ
+ITQ_null <- isdb_null %>% filter(TRIPCD_ID == 7051)
+unique(ITQ_null$SET_TYPE)
+
+ITQ_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+ITQ_null <- ITQ_null %>% 
+  filter(SETCD_ID == 4)
+
+
+#LOBSTER
+lobster_null <- isdb_null %>% filter(TRIPCD_ID == 7065)
+unique(lobster_null$SET_TYPE)
+
+lobster_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+lobster_null <- lobster_null %>% 
+  filter(SETCD_ID == 4)
+
+
+#SNOWCRAB
+snowcrab_null <- isdb_null %>% filter(TRIPCD_ID == 7061)
+unique(snowcrab_null$SET_TYPE)
+
+snowcrab_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+snowcrab_null <- snowcrab_null %>% 
+  filter(SETCD_ID == 4)
+
+
+
+#look at sampling years
+a <- halibut_fixed %>% select(YEAR, TRIP_TYPE)
+b <- sentinel %>% select(YEAR, TRIP_TYPE)
+c <- ITQ %>% select(YEAR, TRIP_TYPE)
+d <- lobster %>% select(YEAR, TRIP_TYPE)
+e <- snowcrab %>% select(YEAR, TRIP_TYPE)
+
+
+sampled <- rbind(a,b,c,d,e) %>%
+  ungroup()
+
+sampled <- as.data.frame(table(sampled))
+sampled$observed <- ifelse(sampled$Freq>0, 'X', '')
+
+#convert to wide format
+sampled <- sampled %>%
+  select(-c(Freq))
+
+sampled <- spread(sampled, YEAR, observed)
+
+
+
+#Proportion Catch (Frequency of Occurance)
+a <- halibut_fixed_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+b <- sentinel_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+c <- ITQ_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+d <- lobster_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+e <- snowcrab_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+
+sampled_null <- rbind(a,b,c,d,e)
+
+
+f <- halibut_fixed %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+g <- sentinel %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+h <- ITQ %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+i <- lobster %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+j <- snowcrab %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+
+isb_surveys <- rbind(f,g,h,i,j)
+
+#summarize sets
+isdb_summary <- isb_surveys %>% 
+  group_by(TRIP_TYPE) %>% 
+  summarise(sets = length(unique(FISHSET_ID)))
+
+isdb_null_summary <- sampled_null %>% 
+  group_by(TRIP_TYPE) %>% 
+  summarise(nullsets = length(unique(FISHSET_ID)))
+
+isdb_summary <- left_join(isdb_summary, isdb_null_summary, by="TRIP_TYPE") %>% 
+  mutate(occurance = 100*(sets/nullsets))
+
+
+
+#Commercial Catches
 silverhake <- isdb %>% filter(TRIPCD_ID == 14) 
 
 snowcrab_lengths <- isdb_lengths %>% filter(TRIPCD_ID ==7061)
@@ -549,7 +718,6 @@ Lobster_surv <- isdb_lengths %>% filter(TRIPCD_ID == 7065)
 
 
 #summaries for est_catches ----------
-
 yrcatch_sentinel_4VN <- sentinel_4VN %>%
   select(YEAR, EST_COMBINED_WT) %>% 
   group_by(YEAR) %>% 
@@ -610,78 +778,6 @@ yrcatch_halibut_longline <- halibut_longline %>%
   summarise (EST_COMBINED_WT = sum(EST_COMBINED_WT))
 plot(yrcatch_halibut_longline)
 
-
-#Frequency of occurrence with bar graph ---------------
-
-# proportions are not even 1% .. therefore coming up .52 on table 
-snowcrab <- isdb_null %>% filter(TRIPCD_ID == 7061)
-
-propcatch_snowcrab <-snowcrab  %>% 
-  mutate(snow_crab = ifelse(SPECCD_ID==50, 'Y', "N")) %>% 
-  select(YEAR, SET_NO, snow_crab) %>% 
-  group_by(YEAR, snow_crab) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(snow_crab=="Y") %>% 
-  mutate(proportion = (n/total)) 
-
-propcatch_snowcrab %>%
-  ggplot(propcatch_spring4VsW, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
-
-ITQ_lobster <- isdb_null %>% filter(TRIPCD_ID == 7051)
-
-propcatch_itq <- ITQ_lobster %>% 
-  mutate(itq.7051 = ifelse(SPECCD_ID==50, 'Y', "N")) %>% 
-  select(YEAR, SET_NO, itq.7051) %>% 
-  group_by(YEAR, itq.7051) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(itq.7051=="Y") %>% 
-  mutate(proportion = (n/total)) 
-
-propcatch_itq %>%
-  ggplot(propcatch_spring4VsW, mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
-
-halibut_longline <- isdb_null %>% filter(TRIPCD_ID == 7057)
-
-propcatch_HL <- halibut_longline %>% 
-  mutate(wolf.HL = ifelse(SPECCD_ID==50, 'Y', "N")) %>% 
-  select(YEAR, SET_NO, wolf.HL) %>% 
-  group_by(YEAR, wolf.HL) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf.HL=="Y") %>% 
-  mutate(proportion = (n/total)) 
-
-propcatch_HL %>%
-  ggplot(mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
-
-
-cod <- isdb_null %>% filter(TRIPCD_ID == 7001)
-
-propcatch_cod <-  cod %>% 
-  mutate(wolf.cod = ifelse(SPECCD_ID==50, 'Y', "N")) %>% 
-  select(YEAR, SET_NO, wolf.cod) %>% 
-  group_by(YEAR, wolf.cod) %>% 
-  summarise (n = n()) %>% 
-  group_by(YEAR) %>% 
-  mutate(total = sum(n)) %>% 
-  filter(wolf.cod=="Y") %>% 
-  mutate(proportion = (n/total)) 
-
-propcatch_cod %>%
-  ggplot(mapping = aes(YEAR, proportion)) +
-  geom_bar(stat="identity") +
-  theme_classic()
 
 
 # Frequency of lengths -------
@@ -745,6 +841,7 @@ cod_lengths %>%
   theme_classic()+
   theme(text = element_text(size=15),
         axis.text = element_text(size=15))
+
 #Shrimp
 shrimp <- isdb %>% filter(TRIPCD_ID == 2210)
 
@@ -757,8 +854,9 @@ shrimp_lengths %>%
   theme(text = element_text(size=15),
         axis.text = element_text(size=15))
 
+                     
+                     
 #Playing with gear (boxplots and density) ---------
-
 # density graphs of how often certain gear types appeared 
 str(isdb)
 isdb_gear <- isdb %>%
