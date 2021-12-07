@@ -556,7 +556,7 @@ summer_lengths <- summer_lengths %>%
 summer_lengths_mature <- summer_lengths %>% 
   filter(maturity == 'mature')%>%
   group_by(YEAR) %>% 
-  summarize(total_lengths = sum(FLEN)) 
+  summarize(total_lengths = length(FLEN)) 
 
 
 H <- ggplot(summer_lengths_mature, aes (YEAR, total_lengths)) +
@@ -571,7 +571,7 @@ H <- ggplot(summer_lengths_mature, aes (YEAR, total_lengths)) +
 summer_lengths_immature <- summer_lengths %>% 
   filter(maturity == 'immature')%>%
   group_by(YEAR) %>% 
-  summarize(total_lengths = sum(FLEN)) 
+  summarize(total_lengths = length(FLEN)) 
   
 
  G <- ggplot(summer_lengths_immature, aes (YEAR, total_lengths)) +
@@ -586,7 +586,7 @@ summer_lengths_immature <- summer_lengths %>%
 #all length groups 
  summer_lengths_total <- summer_lengths %>% 
    group_by(YEAR) %>% 
-   summarize(total_lengths = sum(FLEN)) 
+   summarize(total_lengths = length(FLEN)) 
  
  
  I <- ggplot(summer_lengths_total, aes (YEAR, total_lengths)) +
@@ -606,7 +606,7 @@ georges_catchrate <- georges_lengths %>%
 georges_catchrate <- georges_lengths %>% 
   filter(maturity ==  'mature') %>%
   group_by(YEAR) %>% 
-  summarize(total_lengths = sum(FLEN)) 
+  summarize(total_lengths = length(FLEN)) 
 
 
 E <- ggplot(georges_catchrate, aes (YEAR, total_lengths)) +
@@ -620,7 +620,7 @@ E <- ggplot(georges_catchrate, aes (YEAR, total_lengths)) +
 georges_catchrates <- georges_lengths %>% 
   filter(maturity ==  'immature') %>%
   group_by(YEAR) %>% 
-  summarize(total_lengths = sum(FLEN)) 
+  summarize(total_lengths = length(FLEN)) 
 
 
 P <- ggplot(georges_catchrates, aes (YEAR, total_lengths)) +
@@ -633,7 +633,7 @@ P <- ggplot(georges_catchrates, aes (YEAR, total_lengths)) +
 #totals of georges bank
 georges_catch <- georges_lengths %>% 
   group_by(YEAR) %>% 
-  summarize(total_lengths = sum(FLEN)) 
+  summarize(total_lengths = length(FLEN)) 
 
 
 D <- ggplot(georges_catch, aes (YEAR, total_lengths)) +
@@ -654,7 +654,7 @@ str(spring4VsW_catchrate)
 spring4VsW_mature <- spring4VsW_catchrate %>% 
   filter(maturity == "mature") %>%
   group_by(YEAR) %>% 
-  summarize(total_lengths = sum(FLEN)) 
+  summarize(total_lengths = length(FLEN)) 
 
 catches <- ggplot(spring4VsW_mature, aes (YEAR, total_lengths)) +
   geom_point(color = 'blue') +
@@ -668,7 +668,7 @@ catches <- ggplot(spring4VsW_mature, aes (YEAR, total_lengths)) +
 spring4VsW_immature <- spring4VsW_catchrate %>% 
   filter(maturity == "immature") %>%
   group_by(YEAR) %>% 
-  summarize(total_lengths = sum(FLEN)) 
+  summarize(total_lengths = length(FLEN)) 
 
 spring_immature <- ggplot(spring4VsW_immature, aes(YEAR, total_lengths)) +
   geom_point(color = 'blue') +
@@ -681,7 +681,7 @@ spring_immature <- ggplot(spring4VsW_immature, aes(YEAR, total_lengths)) +
 
 spring4VsW_totalcatch <- spring4VsW_catchrate %>% 
   group_by(YEAR) %>% 
-  summarize(total_lengths = sum(FLEN)) 
+  summarize(total_lengths = length(FLEN)) 
 
 springVsW_totalcatch <- ggplot(spring4VsW_totalcatch, aes(YEAR, total_lengths)) +
   geom_point(color = 'blue') +

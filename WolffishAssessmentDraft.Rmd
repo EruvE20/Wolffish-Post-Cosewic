@@ -225,21 +225,285 @@ ggplot(rv_summary, aes(YEAR, occurance, colour=SURVEY))+
 ```
   
 
-```{r, fig.cap="", fig.align='center'}
-#here you will add code for the abundance graphs of mature/immature
+```{r, fig.cap="Abundance of immature and immature Wolffish in the RV Surveys", fig.align='center'}
+
+spring4VsW_lengths$SURVEY <- "4VsW"
+spring4x_lengths$SURVEY <- "4X"
+georges_lengths$SURVEY <- "Georges Bank"
+spring_lengths$SURVEY <- "Spring"
+summer_lengths$SURVEY <- "Summer"
+fall_lengths$SURVEY <- "Fall"
+redfish_lengths$SURVEY <- "Redfish"
+
+aa <- georges_lengths %>%
+  filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+bb <- summer_lengths %>%
+  filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+cc <- fall_lengths  %>%
+filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+dd <- spring_lengths %>%
+  filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+ee <- spring4VsW_lengths  %>%
+filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+ff <- spring4x_lengths %>%
+  filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+gg <- redfish_lengths %>%
+filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+survey_lengths <- rbind(aa, bb, cc, dd, ee, ff, gg)
+
+sl <- survey_lengths %>%
+mutate(maturity = ifelse(FLEN <53, 'immature', 'mature'))
+
+sl %>% 
+  group_by(YEAR, maturity, SURVEY) %>% 
+  drop_na(maturity) %>%
+  summarize(abundance = length(FLEN)) %>% 
+  ggplot(aes(x=YEAR, y=abundance, col=maturity))+
+  geom_line()+
+  theme_classic()+
+  facet_wrap(~SURVEY, scales = "free_x")
 ```
   
 
 
-```{r, fig.cap="", fig.align='center'}
-#here you will add code for the log transformed catch plots
+```{r, fig.cap="Log Transformed catch rate (total number at length) for each RV survey", fig.align='center'}
+#Summer 
+
+#mature
+summer_lengths <- summer_lengths %>% 
+  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
+
+
+summer_lengths_mature <- summer_lengths %>% 
+  filter(maturity == 'mature')%>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = length(FLEN)) 
+
+
+H <- ggplot(summer_lengths_mature, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Summer mature (>53)") 
+
+#immature
+
+summer_lengths_immature <- summer_lengths %>% 
+  filter(maturity == 'immature')%>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = length(FLEN)) 
+  
+
+ G <- ggplot(summer_lengths_immature, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Summer immature (<53)") 
+ 
+ 
+
+#all length groups 
+ summer_lengths_total <- summer_lengths %>% 
+   group_by(YEAR) %>% 
+   summarize(total_lengths = length(FLEN)) 
+ 
+ 
+ I <- ggplot(summer_lengths_total, aes (YEAR, total_lengths)) +
+   geom_point(color = 'blue') +
+   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+   theme_classic () +
+   ggtitle("Summer total lengths") 
+
+grid.arrange(G,H,I, nrow=3) # 6 rows, 3 cols
+
+#Georges 
+
+georges_catchrate <- georges_lengths %>% 
+  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
+
+georges_catchrate <- georges_lengths %>% 
+  filter(maturity ==  'mature') %>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = length(FLEN)) 
+
+
+E <- ggplot(georges_catchrate, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Georges Bank (5z) mature") 
+
+# immature 
+georges_catchrates <- georges_lengths %>% 
+  filter(maturity ==  'immature') %>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = length(FLEN)) 
+
+
+P <- ggplot(georges_catchrates, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Georges Bank (5z) immature") 
+
+#totals of georges bank
+georges_catch <- georges_lengths %>% 
+  group_by(YEAR) %>% 
+  summarize(total_lengths = length(FLEN)) 
+
+
+D <- ggplot(georges_catch, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Georges Bank (5z) total") 
+
+
+#Spring_4x
+
+#mature 
+spring4VsW_catchrate <- spring4VsW_lengths %>% 
+  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
+str(spring4VsW_catchrate)
+
+spring4VsW_mature <- spring4VsW_catchrate %>% 
+  filter(maturity == "mature") %>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = length(FLEN)) 
+
+catches <- ggplot(spring4VsW_mature, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Spring 4VsW mature") 
+
+
+#immature 
+spring4VsW_immature <- spring4VsW_catchrate %>% 
+  filter(maturity == "immature") %>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = length(FLEN)) 
+
+spring_immature <- ggplot(spring4VsW_immature, aes(YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Spring 4VsW immature")
+
+#Combined
+
+spring4VsW_totalcatch <- spring4VsW_catchrate %>% 
+  group_by(YEAR) %>% 
+  summarize(total_lengths = length(FLEN)) 
+
+springVsW_totalcatch <- ggplot(spring4VsW_totalcatch, aes(YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Spring 4VsW total")
+
+grid.arrange(G,H,I, P, E, D, spring_immature, catches, springVsW_totalcatch, nrow=3, ncol = 3)
 ```
   
   
 
 ### Length Frequency Distributions of Wolffish in RV Surveys
-```{r, fig.cap="", fig.align='center'}
-#here you will add code for the histograms
+```{r, fig.cap="Length Frequency distributions of wolffish for RV surveys", fig.align='center'}
+#SPRING 4VSW
+j <- spring4VsW_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15)) +
+  ggtitle("SPRING 4VsW")
+
+#SPRING 4X
+k<- spring4x_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15)) +
+  ggtitle("SPRING 4X")
+
+#SPRING
+l <- spring_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15)) +
+  ggtitle("SPRING")
+
+#GEORGES 
+m <- georges_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15)) +
+  ggtitle("GEORGES BANK (5Z)")
+
+#FALL
+n <- fall_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15)) +
+  ggtitle("FALL")
+
+
+#SUMMER 
+o <- summer_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15)) +
+  ggtitle("SUMMER")
+
+#REDFISH 
+p <- redfish_lengths %>% 
+  ggplot(aes(FLEN))+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15)) +
+  ggtitle("REDFISH")
+
+ grid.arrange(j,k,l,m,n,o,p, nrow = 2)
 ```
   
 
