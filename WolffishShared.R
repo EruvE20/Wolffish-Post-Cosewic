@@ -1,6 +1,8 @@
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
+library(gridExtra)
+install.packages("gridExtra")
 
 ##Wolffish Shared Project File
 
@@ -75,36 +77,71 @@ yrcatch_spring4VsW <- spring4VsW %>%
   select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
   summarise (n = n())
+yrcatch_spring4VsW %>%
+  ggplot(aes(YEAR, n)) +
+  geom_point() +
+  theme_classic()
 
 yrcatch_spring4x <- spring4X %>% 
   select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
-  summarise (n = n())
+  summarise (n = n()) 
+
+  yrcatch_spring4x %>%
+  ggplot(aes(YEAR, n)) +
+  geom_point() +
+  theme_classic()
+  
 
 yrcatch_spring <- spring %>% 
   select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
   summarise (n = n())
 
+yrcatch_spring %>%
+  ggplot(aes(YEAR, n)) +
+  geom_point() +
+  theme_classic()
+
 yrcatch_fall<- fall %>% 
   select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
   summarise (n = n())
+
+yrcatch_fall %>%
+  ggplot(aes(YEAR, n)) +
+  geom_point() +
+  theme_classic()
 
 yrcatch_georges <- georges %>% 
   select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
   summarise (n = n())
 
+yrcatch_georges %>%
+  ggplot(aes(YEAR, n)) +
+  geom_point() +
+  theme_classic()
+
 yrcatch_summer <- summer %>% 
   select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
   summarise (n = n())
 
+yrcatch_summer %>%
+  ggplot(aes(YEAR, n)) +
+  geom_point() +
+  theme_classic()
+
 yrcatch_redfish <- redfish %>% 
   select(YEAR, SETNO) %>% 
   group_by(YEAR) %>% 
   summarise (n = n())
+
+yrcatch_redfish %>%
+  ggplot(aes(YEAR, n)) +
+  geom_point() +
+  theme_classic()
 
 
 #Frequencies of Occurence
@@ -150,7 +187,7 @@ rv <- rbind(a,b,c,d,e,f,g)
 
 
 
-#full nulls
+#full nulls------
 spring4VsW_null$SURVEY <- "4VsW"
 spring4X_null$SURVEY <- "4X"
 georges_null$SURVEY <- "Georges Bank"
@@ -185,7 +222,7 @@ f <- fall_null %>%
   select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
 g <- redfish_null %>% 
-  filter(XTYPE == 1) %>% 
+  filter(TYPE == 1) %>% 
   select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
 
@@ -194,24 +231,38 @@ rv_null <- rbind(a,b,c,d,e,f,g)
 
 
 #summarize sets
-rv_summary <- rv %>% 
+
+
+
+#rv_summary <- rv %>% 
   group_by(SURVEY, MISSION) %>% 
   summarise(sets = length(unique(SETNO))) %>% 
   group_by(SURVEY) %>% 
-  summarise(sets=sum(sets))
+  filter(SURVEY == "4VsW")
+  summarise(sets=sum(sets)) 
+ 
 
-rv_null_summary <- rv_null %>%
+#rv_null_summary <- rv %>%
   group_by(SURVEY, MISSION) %>% 
   summarise(nullsets = length(unique(SETNO))) %>% 
-  group_by(SURVEY) %>% 
-  summarise(nullsets=sum(nullsets))
+  group_by(SURVEY) %>%
+  filter(SURVEY == "fall") %>% 
+  summarise(nullsets=sum(nullsets)) 
+  
 
 rv_summary <- left_join(rv_summary, rv_null_summary, by="SURVEY") %>% 
-  mutate(occurance = 100*(sets/nullsets))
+  mutate(occurance = 100*(sets/nullsets)) 
+
+rv_summary %>%
+  ggplot(propcatch_spring4VsW, mapping = aes(YEAR, proportion)) +
+  geom_bar(stat="identity") +
+  theme_classic()
+  
 
 
 
-#Annual
+#Annual -- -do this for ISDB as well 
+#add titles to all plots 
 rv_summary <- rv %>% 
   group_by(SURVEY, YEAR) %>% 
   summarise(sets = length(unique(SETNO)))
@@ -229,71 +280,89 @@ ggplot(rv_summary, aes(YEAR, occurance, colour=SURVEY))+
   facet_wrap(~SURVEY, scales = "free_x")
 
 
+springVSW_freq <- rv_lengths %>% 
+  select(NAME, YEAR, MISSION, SETNO, SAMPWGT, TOTWGT, TOTNO, FLEN) %>%
+  filter(NAME == "4VSW")
+  
 
 
 
 #length frequency distributions ---------------------------------------
+# this would be good to grid range 
+
+
 #SPRING 4VSW
-spring4VsW_lengths %>% 
+j <- spring4VsW_lengths %>% 
   ggplot(aes(FLEN))+
-  geom_histogram(binwidth = 5, col="black", fill="green", alpha=.2)+
+  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
   theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
+        axis.text = element_text(size=15)) +
+  ggtitle("SPRING 4VsW")
 
 #SPRING 4X
-spring4x_lengths %>% 
+k<- spring4x_lengths %>% 
   ggplot(aes(FLEN))+
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
   theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
+        axis.text = element_text(size=15)) +
+  ggtitle("SPRING 4X")
+
 #SPRING
-spring_lengths %>% 
+l <- spring_lengths %>% 
   ggplot(aes(FLEN))+
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
   theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
+        axis.text = element_text(size=15)) +
+  ggtitle("SPRING")
 
 #GEORGES 
-georges_lengths %>% 
+m <- georges_lengths %>% 
   ggplot(aes(FLEN))+
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
   theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
+        axis.text = element_text(size=15)) +
+  ggtitle("GEORGES BANK (5Z)")
 
 #FALL
-fall_lengths %>% 
+n <- fall_lengths %>% 
   ggplot(aes(FLEN))+
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
   theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
+        axis.text = element_text(size=15)) +
+  ggtitle("FALL")
+
 
 #SUMMER 
-summer_lengths %>% 
+o <- summer_lengths %>% 
   ggplot(aes(FLEN))+
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
   theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
+        axis.text = element_text(size=15)) +
+  ggtitle("SUMMER")
 
 #REDFISH 
-redfish_lengths %>% 
+p <- redfish_lengths %>% 
   ggplot(aes(FLEN))+
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
   theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
+        axis.text = element_text(size=15)) +
+  ggtitle("REDFISH")
+
+ grid.arrange(j,k,l,m,n,o,p, nrow = 2)
 
 
 #abundance of mature vs immature ---------------------------------------------
@@ -339,10 +408,10 @@ spring4x_lengths %>%
   facet_wrap(~year_data)
 
 
-# spring 
+# spring  -- took out 1995 ----- 
 spring_lengths <- spring_lengths %>% 
-  select(YEAR == <1995)
-  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
+  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) %>%
+  filter(YEAR != "1995")
 
 spring_lengths %>% 
   group_by(YEAR, maturity) %>% 
@@ -412,9 +481,6 @@ data$year_data= factor(data$year_data, levels=c('pre', 'post'))
     theme(text = element_text(size=15),
           axis.text = element_text(size=15)) 
   
-  
-
-str(summer_lengths)
 
 #GEORGES 
 georges_lengths <- georges_lengths %>% 
@@ -433,6 +499,59 @@ georges_lengths %>%
   theme(text = element_text(size=15),
         axis.text = element_text(size=15))
 
+#facet wrap graphs of all lengths --------------------
+
+spring4VsW_lengths$SURVEY <- "4VsW"
+spring4x_lengths$SURVEY <- "4X"
+georges_lengths$SURVEY <- "Georges Bank"
+spring_lengths$SURVEY <- "Spring"
+summer_lengths$SURVEY <- "Summer"
+fall_lengths$SURVEY <- "Fall"
+redfish_lengths$SURVEY <- "Redfish"
+
+aa <- georges_lengths %>%
+  filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+bb <- summer_lengths %>%
+  filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+cc <- fall_lengths  %>%
+filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+dd <- spring_lengths %>%
+  filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+ee <- spring4VsW_lengths  %>%
+filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+ff <- spring4x_lengths %>%
+  filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+gg <- redfish_lengths %>%
+filter (TYPE == 1) %>%
+  select (YEAR, FLEN, SURVEY)
+
+survey_lengths <- rbind(aa, bb, cc, dd, ee, ff, gg)
+
+sl <- survey_lengths %>%
+mutate(maturity = ifelse(FLEN <53, 'immature', 'mature'))
+
+sl %>% 
+  group_by(YEAR, maturity, SURVEY) %>% 
+  drop_na(maturity) %>%
+  summarize(abundance = length(FLEN)) %>% 
+  ggplot(aes(x=YEAR, y=abundance, col=maturity))+
+  geom_line()+
+  theme_classic()+
+  facet_wrap(~SURVEY, scales = "free_x")
+  
+
 # Log transformed catch rate ---------
 
 #Summer 
@@ -441,61 +560,159 @@ georges_lengths %>%
 summer_lengths <- summer_lengths %>% 
   mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
 
-summer_lengths %>% 
-  group_by(YEAR, maturity) %>% 
-  drop_na(maturity) %>%
-  summarize(total_lengths = sum(FLEN)) %>%
-  filter(maturity == 'mature') %>%
-  ggplot(aes (YEAR, total_lengths)) +
+
+summer_lengths_mature <- summer_lengths %>% 
+  filter(maturity == 'mature')%>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = sum(FLEN)) 
+
+
+H <- ggplot(summer_lengths_mature, aes (YEAR, total_lengths)) +
   geom_point(color = 'blue') +
   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
   theme_classic () +
-  ggtitle("mature (<53)")
+  ggtitle("Summer mature (>53)") 
 
 #immature
-summer_lengths_immature <- summer_lengths %>% 
-  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
 
-summer_lengths_immature %>% 
-  group_by(YEAR, maturity) %>% 
-  drop_na(maturity) %>%
-  summarize(total_lengths = sum(FLEN)) %>%
-  filter(maturity == 'immature') %>%
-  ggplot(aes (YEAR, total_lengths)) +
+summer_lengths_immature <- summer_lengths %>% 
+  filter(maturity == 'immature')%>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = sum(FLEN)) 
+  
+
+ G <- ggplot(summer_lengths_immature, aes (YEAR, total_lengths)) +
   geom_point(color = 'blue') +
   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
   theme_classic () +
-  ggtitle("immature(>53)")
+  ggtitle("Summer immature (<53)") 
+ 
+ 
 
 #all length groups 
-summer_all_lengths<- summer_lengths %>% 
+ summer_lengths_total <- summer_lengths %>% 
+   group_by(YEAR) %>% 
+   summarize(total_lengths = sum(FLEN)) 
+ 
+ 
+ I <- ggplot(summer_lengths_total, aes (YEAR, total_lengths)) +
+   geom_point(color = 'blue') +
+   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+   theme_classic () +
+   ggtitle("Summer total lengths") 
+
+grid.arrange(G,H,I, nrow=3) # 6 rows, 3 cols
+
+#Georges 
+
+georges_catchrate <- georges_lengths %>% 
   mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
 
-summer_all_lengths %>% 
-  group_by(YEAR, maturity) %>% 
-  drop_na(maturity) %>%
-  summarize(total_lengths = sum(FLEN))
+georges_catchrate <- georges_lengths %>% 
+  filter(maturity ==  'mature') %>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = sum(FLEN)) 
 
-summer_all_lengths %>%
-  ggplot(aes (YEAR, total_lengths)) +
+
+E <- ggplot(georges_catchrate, aes (YEAR, total_lengths)) +
   geom_point(color = 'blue') +
   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
   theme_classic () +
-  ggtitle("total lengths") +
+  ggtitle("Georges Bank (5z) mature") 
 
-lm_eqn <- function(summer_all_lengths){
-  m <- lm(y ~ x, summer_all_lengths);
+# immature 
+georges_catchrates <- georges_lengths %>% 
+  filter(maturity ==  'immature') %>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = sum(FLEN)) 
+
+
+P <- ggplot(georges_catchrates, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Georges Bank (5z) immature") 
+
+#totals of georges bank
+georges_catch <- georges_lengths %>% 
+  group_by(YEAR) %>% 
+  summarize(total_lengths = sum(FLEN)) 
+
+
+D <- ggplot(georges_catch, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Georges Bank (5z) total") 
+
+
+#Spring_4x
+
+#mature 
+spring4VsW_catchrate <- spring4VsW_lengths %>% 
+  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
+str(spring4VsW_catchrate)
+
+spring4VsW_mature <- spring4VsW_catchrate %>% 
+  filter(maturity == "mature") %>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = sum(FLEN)) 
+
+catches <- ggplot(spring4VsW_mature, aes (YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Spring 4VsW mature") 
+
+
+#immature 
+spring4VsW_immature <- spring4VsW_catchrate %>% 
+  filter(maturity == "immature") %>%
+  group_by(YEAR) %>% 
+  summarize(total_lengths = sum(FLEN)) 
+
+spring_immature <- ggplot(spring4VsW_immature, aes(YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Spring 4VsW immature")
+
+#Combined
+
+spring4VsW_totalcatch <- spring4VsW_catchrate %>% 
+  group_by(YEAR) %>% 
+  summarize(total_lengths = sum(FLEN)) 
+
+springVsW_totalcatch <- ggplot(spring4VsW_totalcatch, aes(YEAR, total_lengths)) +
+  geom_point(color = 'blue') +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic () +
+  ggtitle("Spring 4VsW total")
+
+grid.arrange(G,H,I, P, E, D, spring_immature, catches, springVsW_totalcatch, nrow=3, ncol = 3)
+
+
+
+# Can't figure out regression line + equation -----------------
+lm_eqn = function(summer_all_lengths)
+  {
+  m = lm(y ~ x, summer_all_lengths);
   eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
                    list(a = format(coef(m)[1], digits = 2), 
                         b = format(coef(m)[2], digits = 2), 
                         r2 = format(summary(m)$r.squared, digits = 3)))
   as.character(as.expression(eq));                 
 }
-
-p1 <- summer_all_lengths + geom_text(x = 25, y = 300, label = lm_eqn(df), parse = TRUE)
+p1 = p + geom_text(data=summer_all_lengths,aes(x = 25, y = 300,label=V1), parse = TRUE, inherit.aes=FALSE)
 
 
 
@@ -677,7 +894,7 @@ sampled <- spread(sampled, YEAR, observed)
 
 
 
-#Proportion Catch (Frequency of Occurance)
+#Proportion Catch (Frequency of Occurrence)
 a <- halibut_fixed_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
 b <- sentinel_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
 c <- ITQ_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
@@ -707,6 +924,71 @@ isdb_null_summary <- sampled_null %>%
 isdb_summary <- left_join(isdb_summary, isdb_null_summary, by="TRIP_TYPE") %>% 
   mutate(occurance = 100*(sets/nullsets))
 
+
+#combined graph of abundance ---------------------- (halibut, 4VsW, 4X, and snowcrab)
+
+#gridExtra 
+#gridExtra :: look up 
+#cow plot 
+#ggsave 
+
+#double check through SQL
+
+halibut_fixed_lengths$CMSURVEY <- "Halibut longline"
+sentinel_fixed_lengths$CMSURVEY <- "4VsW Sentinel"
+ITQ_lengths$CMSURVEY <- "4x mobile survey"
+snowcrab_fixed_lengths$CMSURVEY <- "Snow Crab"
+
+#Halibut Industry Longline Survey
+halibut_longline_lengths <- isdb_lengths %>% filter(TRIPCD_ID == 7057)
+
+halibut_fixed_lengths <- halibut_longline_lengths %>% 
+  filter(SETCD_ID == 4) 
+str(halibut_fixed_lengths)
+
+A <- halibut_fixed_lengths %>%
+  select (YEAR, EST_COMBINED_WT, CMSURVEY,FISH_LENGTH) %>%
+  filter(!is.na(FISH_LENGTH))
+
+
+
+#4VSW Sentinel Survey
+sentinel_lengths <- isdb_lengths %>% filter(TRIPCD_ID == 7050)
+
+sentinel_fixed_lengths <- sentinel_lengths %>% 
+  filter(SETCD_ID == 5)
+
+B <- sentinel_fixed_lengths %>%
+  select (YEAR, EST_COMBINED_WT, CMSURVEY, FISH_LENGTH) %>%
+  filter(!is.na(FISH_LENGTH))
+
+
+#ITQ
+ITQ_lengths <- isdb_lengths %>% filter(TRIPCD_ID == 7051)
+
+ITQ_fixed_lengths <- ITQ_lengths %>% 
+  filter(SETCD_ID == 4)
+
+C <- ITQ_lengths %>%
+  select (YEAR, EST_COMBINED_WT, CMSURVEY, FISH_WEIGHT, FISH_LENGTH) %>%
+  filter(!is.na(FISH_LENGTH))
+
+
+#LOBSTER
+lobster_lengths <- isdb_lengths %>% filter(TRIPCD_ID == 7065)
+unique(lobster_lengths$SET_TYPE)
+
+
+#SNOWCRAB
+
+snowcrab_lengths <- isdb_lengths %>% filter(TRIPCD_ID == 7061)
+
+snowcrab_fixed_lengths <- snowcrab_lengths %>% 
+  filter(SETCD_ID == 4)
+
+D <- snowcrab_fixed_lengths%>%
+  select (YEAR, EST_COMBINED_WT, CMSURVEY, FISH_LENGTH) %>%
+  filter(!is.na(FISH_LENGTH))
 
 
 #Commercial Catches
