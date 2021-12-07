@@ -204,7 +204,7 @@ rv_null_summary <- rv_null %>%
   group_by(SURVEY, MISSION) %>% 
   summarise(nullsets = length(unique(SETNO))) %>% 
   group_by(SURVEY) %>% 
-  summarise(nullsets=sum(nullsets))
+  summarise(nullsets=sum(nullsets)) 
 
 rv_summary <- left_join(rv_summary, rv_null_summary, by="SURVEY") %>% 
   mutate(occurance = 100*(sets/nullsets))
@@ -227,7 +227,6 @@ ggplot(rv_summary, aes(YEAR, occurance, colour=SURVEY))+
   geom_line()+
   theme_classic()+
   facet_wrap(~SURVEY, scales = "free_x")
-
 
 
 

@@ -1,0 +1,650 @@
+---
+title: "Atlantic Wolffish Post-COSEWIC Assessment"
+authors: "Elizabetha Tsitrin, Kayla Silver, Daphne Themelis"
+date: "`r format(Sys.Date(), format='%B %d %Y')`"  
+output: html_document
+---
+  
+  
+**Purpose:** Provide an assessment of Atlantic Wolffish population trends in the Maritimes Region (Scotian Shelf) to inform the existing Recovery Strategy and Management Plan, and help guide future management actions and prioritize conservation measures. Externally, this information could support the next re-assessment of the species by the Committee on the Status of Endangered Wildlife in Canada (COSEWIC).
+
+**Background:** Atlantic Wolffish (*Anarhichas lupus*) underwent steep declines in both abundance and area of occupancy over much of its range from the 1980s until the mid 1990s. The species has been designated as Special Concern since 2000, with a re-evaluation in 2012 confirming the status. Research vessel surveys (NAFO areas 4X & 4VW) suggest that abundance continued to decline on the Scotian Shelf in the 2000s and remains at low levels. However, numerous factors make it difficult to confidently assess trends within the population. Using a combination of Fisheries Observer data, industry data, and Canadian Research Survey data, this review summarizes the current state of knowledge on the Atlantic Wolffish population trends in the Maritimes Region.
+
+**Request for Science Advice:** Is it possible to develop a reliable biomass index for the Scotian Shelf portion of the population? Can the index be used to understand population trends over time? Can the index be used to assess and track fishing mortality over time? What does the data reveal about species distribution patterns? What does the data reveal about potential drivers of population decline, range shifts, and/or sustained low abundances?
+
+
+
+```{r, echo=F, warning=F, message=F}
+knitr::opts_chunk$set(echo = F, message=F, warning=F)
+```
+
+
+```{r, include = FALSE}
+#Set working directory and load libraries
+setwd("C:/Users/TSITRINL/Documents/SARA/Wolffish/Data")
+data.dir="C:/DFO-MPO/MarDataWrangling/wrangledData"
+
+library(Mar.bycatch)
+library(Mar.datawrangling)
+library(tidyverse)
+
+# RV Database -------------------------------------------------------------
+# import and clean data 
+spring4VsW <- read.csv("spring4VsW.csv", header = T) %>%
+  filter(TYPE == 1) %>% 
+  select(-X)
+spring4VsW_lengths <- read.csv("spring4VsW_lengths.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X)
+spring4VsW_null <- read.csv("spring4VsW_null.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X)
+spring4X <- read.csv("spring4X.csv", header = T) %>%
+  filter(TYPE == 1) %>% 
+  select(-X)
+spring4x_lengths <- read.csv("spring4x_lengths.csv", header = T) %>%
+  filter(TYPE == 1) %>% 
+  select(-X)
+spring4X_null <- read.csv("spring4X_null.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X)
+georges <- read.csv("georges.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  filter(YEAR != 1980) %>% 
+  select(-X)
+georges_lengths <- read.csv("georges_lengths.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  filter(YEAR != 1980) %>% 
+  select(-X)
+georges_null <- read.csv("georges_null.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  filter(YEAR != 1980) %>% 
+  select(-X)
+spring <- read.csv("spring.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  filter(YEAR !=1995) %>% 
+  select(-X)
+spring_lengths <- read.csv("spring_lengths.csv", header = T) %>%
+  filter(TYPE == 1) %>% 
+  filter(YEAR !=1995) %>% 
+  select(-X)
+spring_null <- read.csv("spring_null.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  filter(YEAR !=1995) %>% 
+  select(-X)
+summer <- read.csv("summer.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X)
+summer_lengths <- read.csv("summer_lengths.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X)
+summer_null <- read.csv("summer_null.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X)
+fall <- read.csv("fall.csv", header = T) %>%
+  filter(TYPE == 1) %>% 
+  filter(YEAR != 1986) %>% 
+  select(-X)
+fall_lengths <- read.csv("fall_lengths.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  filter(YEAR != 1986) %>% 
+  select(-X)
+fall_null <- read.csv("fall_null.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  filter(YEAR != 1986) %>% 
+  select(-X)
+redfish <- read.csv("redfish.csv", header = T) %>%
+  select(-X)
+redfish_lengths <- read.csv("redfish_lengths.csv", header = T) %>% 
+  select(-X)
+redfish_null <- read.csv("redfish_null.csv", header = T) %>% 
+  select(-X)
+
+```
+
+
+
+# Research Vessel Surveys
+### Distribution of Wolffish in RV Surveys
+
+```{r}
+#maps
+```
+
+
+### Abundance of Wolffish in RV Surveys
+```{r, include = FALSE}
+#setup data for summaries - this chunk will be hidden
+
+#GROUP ALL DATA
+spring4VsW$SURVEY <- "4VsW"
+spring4X$SURVEY <- "4X"
+georges$SURVEY <- "Georges Bank"
+spring$SURVEY <- "Spring"
+summer$SURVEY <- "Summer"
+fall$SURVEY <- "Fall"
+redfish$SURVEY <- "Redfish"
+
+a <- spring4VsW %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+b <- spring4X %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+c <- georges %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+d <- spring %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+e <- summer %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+f <- fall %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+g <- redfish %>% 
+  filter(XTYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+
+rv <- rbind(a,b,c,d,e,f,g)
+
+
+
+#full nulls
+spring4VsW_null$SURVEY <- "4VsW"
+spring4X_null$SURVEY <- "4X"
+georges_null$SURVEY <- "Georges Bank"
+spring_null$SURVEY <- "Spring"
+summer_null$SURVEY <- "Summer"
+fall_null$SURVEY <- "Fall"
+redfish_null$SURVEY <- "Redfish"
+
+
+a <- spring4VsW_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+b <- spring4X_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+c <- georges_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+d <- spring_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+e <- summer_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+f <- fall_null %>% 
+  filter(TYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+g <- redfish_null %>% 
+  filter(XTYPE == 1) %>% 
+  select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
+
+
+rv_null <- rbind(a,b,c,d,e,f,g)
+
+
+
+#Annual
+rv_summary <- rv %>% 
+  group_by(SURVEY, YEAR) %>% 
+  summarise(sets = length(unique(SETNO)))
+
+rv_null_summary <- rv_null %>%
+  group_by(SURVEY, YEAR) %>% 
+  summarise(nullsets = length(unique(SETNO)))
+
+rv_summary <- left_join(rv_summary, rv_null_summary, by=c("SURVEY", "YEAR")) %>% 
+  mutate(occurance = 100*(sets/nullsets))
+
+```
+      
+
+```{r, fig.cap="Percent occurance of wolffish in survey sets", fig.align='center'}
+ggplot(rv_summary, aes(YEAR, occurance, colour=SURVEY))+
+  geom_line()+
+  theme_classic()+
+  facet_wrap(~SURVEY, scales = "free_x")
+
+```
+  
+
+```{r, fig.cap="", fig.align='center'}
+#here you will add code for the abundance graphs of mature/immature
+```
+  
+
+
+```{r, fig.cap="", fig.align='center'}
+#here you will add code for the log transformed catch plots
+```
+  
+  
+
+### Length Frequency Distributions of Wolffish in RV Surveys
+```{r, fig.cap="", fig.align='center'}
+#here you will add code for the histograms
+```
+  
+
+### Wolffish Biomass in RV Surveys
+```{r, fig.cap="Total biomass (black), mature biomass (red), and immature biomass (blue) of Atlantic Wolffish for the DFO George's Bank RV Survey", fig.align='center'}
+biomass <- georges %>% 
+  group_by(YEAR) %>% 
+  summarise(sum = sum(TOTWGT))
+
+biomass_mat <- georges_lengths %>% 
+  filter(FLEN > 53) %>% 
+  group_by(YEAR, MISSION) %>% 
+  select(YEAR, MISSION, SETNO, TOTWGT) %>% 
+  unique() %>% 
+  group_by(YEAR) %>% 
+  summarise(sum=sum(TOTWGT))
+
+biomass_juv <- georges_lengths %>% 
+  filter(FLEN < 54) %>% 
+  group_by(YEAR, MISSION) %>% 
+  select(YEAR, MISSION, SETNO, TOTWGT) %>% 
+  unique() %>% 
+  group_by(YEAR) %>% 
+  summarise(sum=sum(TOTWGT))
+
+
+ggplot(biomass, aes(YEAR, sum))+
+  geom_point()+
+  geom_line()+
+  geom_line(data=biomass_mat, aes(YEAR, sum), col="red")+
+  geom_line(data=biomass_juv, aes(YEAR, sum), col="blue")+
+  theme_classic()+
+  labs(title = "Summer RV Survey total biomass",
+       x = 'Year',
+       y = 'Biomass (kg')
+```
+
+```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO 4VsW RV Survey", fig.align='center'}
+biomass <- spring4VsW %>% 
+  group_by(YEAR) %>% 
+  summarise(sum = sum(TOTWGT))
+
+ggplot(biomass, aes(YEAR, sum))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "4VsW RV Survey total biomass",
+       x = 'Year',
+       y = 'Biomass (kg')
+```
+
+```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO 4X RV Survey", fig.align='center'}
+biomass <- spring4X %>% 
+  group_by(YEAR) %>% 
+  summarise(sum = sum(TOTWGT))
+
+ggplot(biomass, aes(YEAR, sum))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "4X RV Survey total biomass",
+       x = 'Year',
+       y = 'Biomass (kg')
+```
+
+```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO Spring RV Survey", fig.align='center'}
+biomass <- spring %>% 
+  group_by(YEAR) %>% 
+  summarise(sum = sum(TOTWGT))
+
+ggplot(biomass, aes(YEAR, sum))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "Spring RV Survey total biomass",
+       x = 'Year',
+       y = 'Biomass (kg')
+```
+
+```{r, fig.cap="Total biomass (black), mature biomass (red), and immature biomass (blue) of Atlantic Wolffish for the DFO Summer RV Survey", fig.align='center'}
+biomass <- summer %>% 
+  group_by(YEAR) %>% 
+  summarise(sum = sum(TOTWGT))
+
+biomass_mat <- summer_lengths %>% 
+  filter(FLEN > 53) %>% 
+  group_by(YEAR, MISSION) %>% 
+  select(YEAR, MISSION, SETNO, TOTWGT) %>% 
+  unique() %>% 
+  group_by(YEAR) %>% 
+  summarise(sum=sum(TOTWGT))
+
+biomass_juv <- summer_lengths %>% 
+  filter(FLEN < 54) %>% 
+  group_by(YEAR, MISSION) %>% 
+  select(YEAR, MISSION, SETNO, TOTWGT) %>% 
+  unique() %>% 
+  group_by(YEAR) %>% 
+  summarise(sum=sum(TOTWGT))
+
+
+ggplot(biomass, aes(YEAR, sum))+
+  geom_point()+
+  geom_line()+
+  geom_line(data=biomass_mat, aes(YEAR, sum), col="red")+
+  geom_line(data=biomass_juv, aes(YEAR, sum), col="blue")+
+  theme_classic()+
+  labs(title = "Summer RV Survey biomass",
+       x = 'Year',
+       y = 'Biomass (kg')
+```
+
+```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO Fall RV Survey", fig.align='center'}
+biomass <- fall %>% 
+  group_by(YEAR) %>% 
+  summarise(sum = sum(TOTWGT))
+
+ggplot(biomass, aes(YEAR, sum))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "Fall RV Survey total biomass",
+       x = 'Year',
+       y = 'Biomass (kg')
+```
+
+```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO Redfish RV Survey", fig.align='center'}
+biomass <- redfish %>% 
+  group_by(YEAR) %>% 
+  summarise(sum = sum(TOTWGT))
+
+ggplot(biomass, aes(YEAR, sum))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "Redfish RV Survey total biomass",
+       x = 'Year',
+       y = 'Biomass (kg')
+```
+
+  
+
+
+
+# Industry Surveys
+```{r, include = FALSE}
+#import and clean data, this chunk will be hidden
+
+isdb <- read.csv("isdb.csv", header = T) %>%
+  select(-X)
+isdb_lengths <- read.csv("isdb_lengths.csv", header = T) %>%
+  select(-X)
+isdb_null <- read.csv("isdb_null.csv", header = T) %>%
+  select(-X)
+
+
+#Halibut Industry Longline Survey
+halibut_longline <- isdb %>% filter(TRIPCD_ID == 7057)
+unique(halibut_longline$SET_TYPE)
+
+halibut_longline %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+halibut_fixed <- halibut_longline %>% 
+  filter(SETCD_ID == 4)
+
+
+#4VSW Setinel Survey
+sentinel <- isdb %>% filter(TRIPCD_ID == 7050)
+unique(sentinel$SET_TYPE)
+
+sentinel %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+sentinel <- sentinel %>% 
+  filter(SETCD_ID == 5)
+
+                     
+#ITQ
+ITQ <- isdb %>% filter(TRIPCD_ID == 7051)
+unique(ITQ$SET_TYPE)
+
+ITQ %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+ITQ <- ITQ %>% 
+  filter(SETCD_ID == 4)
+
+
+#LOBSTER
+lobster <- isdb %>% filter(TRIPCD_ID == 7065)
+unique(lobster$SET_TYPE)
+
+
+#SNOWCRAB
+snowcrab <- isdb %>% filter(TRIPCD_ID == 7061)
+unique(snowcrab$SET_TYPE)
+
+snowcrab %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+snowcrab <- snowcrab %>% 
+  filter(SETCD_ID == 4)
+
+
+
+
+#NULL SURVEYS
+#Halibut Industry Longline Survey
+halibut_longline_null <- isdb_null %>% filter(TRIPCD_ID == 7057)
+unique(halibut_longline_null$SET_TYPE)
+
+halibut_longline_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+halibut_fixed_null <- halibut_longline_null %>% 
+  filter(SETCD_ID == 4)
+
+unique(halibut_fixed_null$SET_TYPE)
+
+
+#4VSW Setinel Survey
+sentinel_null <- isdb_null %>% filter(TRIPCD_ID == 7050)
+unique(sentinel_null$SET_TYPE)
+
+sentinel_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+sentinel_null <- sentinel_null %>% 
+  filter(SETCD_ID == 5)
+
+
+#ITQ
+ITQ_null <- isdb_null %>% filter(TRIPCD_ID == 7051)
+unique(ITQ_null$SET_TYPE)
+
+ITQ_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+ITQ_null <- ITQ_null %>% 
+  filter(SETCD_ID == 4)
+
+
+#LOBSTER
+lobster_null <- isdb_null %>% filter(TRIPCD_ID == 7065)
+unique(lobster_null$SET_TYPE)
+
+lobster_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+lobster_null <- lobster_null %>% 
+  filter(SETCD_ID == 4)
+
+
+#SNOWCRAB
+snowcrab_null <- isdb_null %>% filter(TRIPCD_ID == 7061)
+unique(snowcrab_null$SET_TYPE)
+
+snowcrab_null %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))
+
+snowcrab_null <- snowcrab_null %>% 
+  filter(SETCD_ID == 4)
+```
+
+
+
+### Distribution of Wolffish in Industry Surveys
+```{r}
+#MAPS
+```
+  
+
+### Abundance of Wolffish in Industry Surveys
+```{r, include=FALSE}
+#setup data for summaries - this chunk will be hidden
+
+a <- halibut_fixed_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+b <- sentinel_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+c <- ITQ_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+d <- lobster_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+e <- snowcrab_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+
+sampled_null <- rbind(a,b,c,d,e)
+
+
+f <- halibut_fixed %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+g <- sentinel %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+h <- ITQ %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+i <- lobster %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+j <- snowcrab %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
+
+isb_surveys <- rbind(f,g,h,i,j)
+
+#summarize sets
+isdb_summary <- isb_surveys %>% 
+  group_by(TRIP_TYPE, YEAR) %>% 
+  summarise(sets = length(unique(FISHSET_ID)))
+
+isdb_null_summary <- sampled_null %>% 
+  group_by(TRIP_TYPE, YEAR) %>% 
+  summarise(nullsets = length(unique(FISHSET_ID)))
+
+isdb_summary <- left_join(isdb_summary, isdb_null_summary, by=c("TRIP_TYPE", "YEAR")) %>% 
+  mutate(occurance = 100*(sets/nullsets))
+
+```
+
+
+```{r, fig.cap="Percent occurance of wolffish in survey sets", fig.align='center'}
+ggplot(isdb_summary, aes(YEAR, occurance, colour=TRIP_TYPE))+
+  geom_line()+
+  theme_classic()+
+  facet_wrap(~TRIP_TYPE, scales = "free_x")
+
+```
+  
+
+```{r, fig.cap="", fig.align='center'}
+#here you will add code for the abundance graphs of mature/immature
+```
+  
+
+
+```{r, fig.cap="", fig.align='center'}
+#here you will add code for the log transformed catch plots
+```
+  
+  
+
+### Length Frequency Distributions of Wolffish in Industry Surveys
+```{r, fig.cap="", fig.align='center'}
+#here you will add code for the histograms
+```
+  
+
+### Wolffish Biomass in Industry Surveys
+```{r, fig.cap="Catch per Unit Effort of Wolffish in the Halibut Longline Survey", fig.align='center'}
+cpue <- halibut_longline %>% 
+  select(YEAR, EST_COMBINED_WT, NUM_HOOK_HAUL) %>% 
+  mutate(sum = (EST_COMBINED_WT/NUM_HOOK_HAUL)*1000) %>% 
+  group_by(YEAR) %>%   
+  summarise(CPUE = mean(sum))
+  
+  
+ggplot(cpue, aes(YEAR, CPUE))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "Halibut Longline Survey CPUE",
+       x = 'Year',
+       y = 'CPUE (kg/1000 hooks)')
+```
+  
+
+```{r, fig.cap="Catch per Unit Effort of Wolffish in the Sentinel Longline Survey", fig.align='center'}
+pue <- sentinel %>% 
+  select(YEAR, EST_COMBINED_WT, NUM_HOOK_HAUL) %>% 
+  mutate(sum = (EST_COMBINED_WT/NUM_HOOK_HAUL)*1000) %>% 
+  group_by(YEAR) %>%   
+  summarise(CPUE = mean(sum))
+
+
+ggplot(cpue, aes(YEAR, CPUE))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "Sentinel Longline Survey CPUE",
+       x = 'Year',
+       y = 'CPUE (kg/1000 hooks)')
+```
+  
+
+```{r, fig.cap="Catch per Trap of Wolffish in the ITQ/Lobster Survey", fig.align='center'}
+a <- ITQ %>%  select(YEAR, EST_COMBINED_WT) %>% 
+  mutate(survey="ITQ")
+
+b <- lobster %>%  select(YEAR, EST_COMBINED_WT) %>% 
+  mutate(survey="Lobster")
+
+cpue <- rbind(a,b) %>% 
+  group_by(YEAR) %>% 
+  summarise(CPUE = mean(EST_COMBINED_WT))
+
+ggplot(cpue, aes(YEAR, CPUE))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "ITQ/Lobster Surveys Uncorrected CPUE",
+       x = 'Year',
+       y = 'CPUE (kg/trap haul)')
+```
+  
+
+
+
+
+
+
