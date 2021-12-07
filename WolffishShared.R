@@ -231,27 +231,20 @@ rv_null <- rbind(a,b,c,d,e,f,g)
 
 
 #summarize sets
-
-
-
-#rv_summary <- rv %>% 
+rv_summary <- rv %>% 
   group_by(SURVEY, MISSION) %>% 
   summarise(sets = length(unique(SETNO))) %>% 
   group_by(SURVEY) %>% 
-  filter(SURVEY == "4VsW")
-  summarise(sets=sum(sets)) 
- 
+  summarise(sets=sum(sets))
 
-#rv_null_summary <- rv %>%
+rv_null_summary <- rv_null %>%
   group_by(SURVEY, MISSION) %>% 
   summarise(nullsets = length(unique(SETNO))) %>% 
-  group_by(SURVEY) %>%
-  filter(SURVEY == "fall") %>% 
-  summarise(nullsets=sum(nullsets)) 
-  
+  group_by(SURVEY) %>% 
+  summarise(nullsets=sum(nullsets))
 
 rv_summary <- left_join(rv_summary, rv_null_summary, by="SURVEY") %>% 
-  mutate(occurance = 100*(sets/nullsets)) 
+  mutate(occurance = 100*(sets/nullsets))
 
 rv_summary %>%
   ggplot(propcatch_spring4VsW, mapping = aes(YEAR, proportion)) +
@@ -284,7 +277,6 @@ springVSW_freq <- rv_lengths %>%
   select(NAME, YEAR, MISSION, SETNO, SAMPWGT, TOTWGT, TOTNO, FLEN) %>%
   filter(NAME == "4VSW")
   
-
 
 
 #length frequency distributions ---------------------------------------
