@@ -1,0 +1,336 @@
+---
+title: "Summary tables"
+output: html_document
+---
+
+```{r, fig.cap = "Summary of Snow Crab for fixed Surveys and Ecosystem Surveys", echo = FALSE, message =FALSE}
+library(dplyr)
+library(ggplot2)
+library(kableExtra)
+isdb_lengths <- read.csv('isdb_lengths.csv')
+snowcrab_sum_fixed <- isdb_lengths %>% 
+  filter(TRIPCD_ID ==7061) %>%
+  filter(YEAR != 2004) %>%
+  filter(SETCD_ID == 4) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+     )
+snowcrab_sum_fixed %>%
+  kbl(caption = "Table 1 Summary of Snow Crab fixed Survey") %>%
+  kable_classic(full_width = T)
+ 
+
+snowcrab_sum_ecosystem <- isdb_lengths %>% 
+  filter(TRIPCD_ID ==7061) %>%
+  filter(YEAR != 2004) %>%
+  filter(SETCD_ID == 11) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR, FISH_LENGTH)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+    count_fish_length = length(FISH_LENGTH),
+    mean_length = mean(FISH_LENGTH)
+  )
+snowcrab_sum_ecosystem %>%
+  kbl(caption = "Table 2 Summary of Snow Crab Ecosystem Survey") %>%
+  kable_classic(full_width = T)
+
+```
+
+
+
+```{r, fig.cap = "Summary for the 4X Mobile Survey (ITQ)", echo = FALSE, message=FALSE}
+
+library(dplyr)
+library(ggplot2)
+library(kableExtra)
+
+isdb_lengths <- read.csv('isdb_lengths.csv')
+
+ITQ_lengths <- isdb_lengths
+
+ ITQ_summary <- isdb_lengths %>% 
+  filter(TRIPCD_ID ==7051) %>%
+  filter(SETCD_ID == 4) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+ 
+ ITQ_summary %>%
+  kbl(caption = "Table 3 Summary for 4X Mobile Fixed Survey") %>%
+  kable_classic(full_width = T)
+
+ 
+ ITQ_stratum <- isdb_lengths %>%
+    filter(TRIPCD_ID == 7051) %>%
+    filter(SETCD_ID == 4) %>%
+    select(STRATUM_ID, EST_COMBINED_WT, SET_NO) %>%
+    group_by(STRATUM_ID) %>%
+    summarize (
+      sum_catch = sum(EST_COMBINED_WT), 
+      total_sets = length(SET_NO),
+    ) 
+ 
+ ITQ_stratum %>%
+  kbl(caption = "Table 4 Summary for 4X Mobile Fixed Survey based on Stratum") %>%
+  kable_classic(full_width = T)
+ 
+ 
+```
+
+
+```{r, fig.cap = "Proportion of Wolfish sets per stratum", echo = FALSE, message=FALSE }
+
+library(dplyr)
+library(ggplot2)
+library(kableExtra)
+
+isdb_null <- read.csv("isdb_null.csv") 
+isdb <- read.csv("isdb.csv") 
+
+ITQ_null <- isdb_null %>% filter(TRIPCD_ID == 7051) %>%
+ filter(SETCD_ID == 4)
+
+ITQ <- isdb %>% filter(TRIPCD_ID == 7051) %>%
+ filter(SETCD_ID == 4)
+
+
+ITQ_N <- ITQ_null %>%
+  select(STRATUM_ID, SET_NO) %>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(nullsets = length(unique(SET_NO)))
+
+
+ITQ_SETS <- ITQ %>% 
+  select(STRATUM_ID, SET_NO)%>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(sets = length(unique(SET_NO)))
+
+
+ITQ_summary <- left_join(ITQ_N, ITQ_SETS, by="STRATUM_ID") %>% 
+  mutate(occurance = 100*(sets/nullsets))
+
+ITQ_summary %>%
+  kbl(caption = "Table 5 Proportion of Wolfish sets per stratum for 4X mobile (ITQ survey)") %>%
+  kable_classic(full_width = T)
+
+```
+
+```{r,fig.cap = "Summary for the 4VsW Sentinel Survey", echo = FALSE, message=FALSE}
+
+isdb <- read.csv("isdb.csv")
+
+sentinel_summaries <- isdb %>% 
+  filter(TRIPCD_ID == 7050) %>%
+  filter(SETCD_ID == 5) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT))
+
+sentinel_summaries %>%
+  kbl(caption = "Table 6 Summary for the 4VsW Sentinel Survey") %>%
+  kable_classic(full_width = T)
+
+sentinel4VsW_stratum <- isdb %>%
+  filter(TRIPCD_ID == 7050) %>%
+  filter(SETCD_ID == 5) %>%
+  select(STRATUM_ID, EST_COMBINED_WT, SET_NO) %>%
+  group_by(STRATUM_ID) %>%
+  summarize (
+    sum_catch = sum(EST_COMBINED_WT), 
+    total_sets = length(SET_NO)
+  )
+
+sentinel4VsW_stratum %>%
+  kbl(caption = "Table 7 Summary for the 4VsW Sentinel Survey") %>%
+  kable_classic(full_width = T)
+
+sentinel_null <- isdb_null %>% filter(TRIPCD_ID == 7050)
+sentinel <- isdb %>% filter(TRIPCD_ID == 7050)
+
+sentinel_N <- sentinel_null %>%
+  select(STRATUM_ID, SET_NO) %>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(nullset = length(unique(SET_NO)))
+
+sentinel_SETS <- sentinel %>% 
+  select(STRATUM_ID, SET_NO)%>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(set = length(unique(SET_NO)))
+
+
+sentinel_summary <- left_join(sentinel_N,sentinel_SETS, by="STRATUM_ID") %>% 
+  mutate(occurance = 100*(set/nullset))
+
+
+sentinel_summary %>%
+  kbl(caption = "Table 8 Proportion of Wolfish sets per stratum for 4VsW sentinel") %>%
+  kable_classic(full_width = T)
+
+
+```
+
+```{r,fig.cap = "Summary for Shrimp Survey based on NAFO AREA", echo = FALSE, message=FALSE}
+
+shrimp_summary <- isdb %>% 
+  filter(TRIPCD_ID ==2210) %>%
+  filter(SETCD_ID == 1) %>%
+  select (NAFAREA_ID, EST_COMBINED_WT, EST_NUM_CAUGHT, SET_NO, GEAR) %>%
+  filter(GEAR =="OTB") %>%
+  group_by(NAFAREA_ID) %>%
+  summarize (
+    sum_catch = sum(EST_COMBINED_WT), 
+    total_sets = length(unique(SET_NO)))
+
+shrimp_summary %>%
+  kbl(caption = "Table 9 Total sets and Estimated combined weight for wolffish based on NAFO areas for Shrimp Survey - OTB GEAR") %>%
+  kable_classic(full_width = T)
+
+shrimp_summary <- isdb %>% 
+  filter(TRIPCD_ID ==2210) %>%
+  filter(SETCD_ID == 1) %>%
+  select (NAFAREA_ID, EST_COMBINED_WT, EST_NUM_CAUGHT, SET_NO, GEAR) %>%
+  filter(GEAR =="OTS") %>%
+  group_by(NAFAREA_ID) %>%
+  summarize (
+    sum_catch = sum(EST_COMBINED_WT), 
+    total_sets = length(unique(SET_NO)))
+
+shrimp_summary %>%
+  kbl(caption = "Table 9 Total sets and Estimated combined weight for wolffish based on NAFO areas for Shrimp Survey - OTS GEAR") %>%
+  kable_classic(full_width = T)
+
+
+```
+```{r,fig.cap = "Summary for 4VN Sentinel Survey", echo = FALSE, message=FALSE}
+Sentinel_4VN_summary <- isdb_lengths %>%
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 4) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+
+Sentinel_4VN_summary %>%
+  kbl(caption = "Summary for the 4VN Sentinel Fixed Survey") %>%
+  kable_classic(full_width = T)
+
+Sentinel4VN_SETS <- isdb_lengths %>% 
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 4) %>%
+  select(YEAR, SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarise(sets = length(unique(SET_NO)))
+
+Sentinel4VN_SETS %>%
+  kbl(caption = "Number of Sets that caught wolffish for the 4VN Sentinel Fixed Survey") %>%
+  kable_classic(full_width = T)
+
+Sentinel_4VN_summary_SETID_5 <- isdb_lengths %>%
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 5) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+Sentinel_4VN_summary_SETID_5 %>%
+  kbl(caption = "Summary for the 4VN Sentinel Random Survey") %>%
+  kable_classic(full_width = T)
+
+  Sentinel4VN_SETS_SETID_5 <- isdb_lengths %>% 
+    filter(TRIPCD_ID == 7052) %>%
+    filter(SETCD_ID == 5) %>%
+    select(YEAR, SET_NO)%>%
+    group_by(YEAR) %>% 
+    summarise(sets = length(unique(SET_NO)))
+  
+Sentinel4VN_SETS_SETID_5 %>%
+  kbl(caption = "Number of Sets that caught wolffish for the 4VN Sentinel Random Survey") %>%
+  kable_classic(full_width = T)
+
+Sentinel_4VN_summary_SETID6 <- isdb_lengths %>%
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 6) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+
+Sentinel_4VN_summary_SETID6 %>%
+  kbl(caption = "Summary for the 4VN Sentinel Random (Fishers Choice) Survey") %>%
+  kable_classic(full_width = T)
+
+Sentinel4VN_SETS_SETID_6 <- isdb_lengths %>% 
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 6) %>%
+  select(YEAR, SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarise(sets = length(unique(SET_NO)))
+
+Sentinel4VN_SETS_SETID_6 %>%
+  kbl(caption = "Number of Sets that caught wolffish for the 4VN Sentinel Random (Fishers Choice) Survey") %>%
+  kable_classic(full_width = T)
+
+Sentinel_4VN_summary_SETID_10 <- isdb_lengths %>%
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 10) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+
+Sentinel_4VN_summary_SETID_10 %>%
+  kbl(caption = "Summary for the 4VN Sentinel Commerical Index") %>%
+  kable_classic(full_width = T)
+
+
+Sentinel4VN_SETS_SETID_10 <- isdb_lengths %>% 
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 10) %>%
+  select(YEAR, SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarise(sets = length(unique(SET_NO)))
+
+Sentinel4VN_SETS_SETID_10 %>%
+  kbl(caption = "Number of Sets that caught wolffish for the 4VN Sentinel Commerical Index") %>%
+  kable_classic(full_width = T)
+
+```
+

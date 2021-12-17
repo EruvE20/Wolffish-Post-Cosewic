@@ -2,7 +2,10 @@ library(dplyr)
 library(ggplot2)
 library(tidyverse)
 library(gridExtra)
+library(scales)
 install.packages("gridExtra")
+install.packages("rmarkdown")
+install.packages("scales")
 
 ##Wolffish Shared Project File
 
@@ -359,6 +362,9 @@ p <- redfish_lengths %>%
 
 #abundance of mature vs immature ---------------------------------------------
 #GEOM_SMOOTH + geom_point 
+ 
+#standardized for final report 
+ #
 
 #SPRING 4VSW
 spring4VsW_lengths <- spring4VsW_lengths %>% 
@@ -547,6 +553,15 @@ sl %>%
 # Log transformed catch rate ---------
 
 #Summer 
+
+#can get summary results for slope and R - do geom text and display in on the graph 
+# filter out 4X from Georges and only use 5Z
+# ask Bill what the 4X survey is in the RV database 
+# changes in length frequency over time - will give stratified mean term 
+#ask Bill about STRANAL 
+# play around with snow crab data - does it represent wolffish? 
+# look at ITQ/Lobster * 
+# snow crab - ask Brent about size/quantity 
 
 #mature
 summer_lengths <- summer_lengths %>% 
@@ -797,10 +812,7 @@ snowcrab %>%
 snowcrab <- snowcrab %>% 
   filter(SETCD_ID == 4)
 
-
-
-
-#NULL SURVEYS
+#NULL SURVEYS------
 #Halibut Industry Longline Survey
 halibut_longline_null <- isdb_null %>% filter(TRIPCD_ID == 7057)
 unique(halibut_longline_null$SET_TYPE)
@@ -860,11 +872,11 @@ snowcrab_null %>%
   summarize(trips = length(unique(FISHSET_ID)))
 
 snowcrab_null <- snowcrab_null %>% 
-  filter(SETCD_ID == 4)
+  filter(SETCD_ID == 11)
 
 
 
-#look at sampling years
+#look at sampling years 
 a <- halibut_fixed %>% select(YEAR, TRIP_TYPE)
 b <- sentinel %>% select(YEAR, TRIP_TYPE)
 c <- ITQ %>% select(YEAR, TRIP_TYPE)
@@ -886,7 +898,7 @@ sampled <- spread(sampled, YEAR, observed)
 
 
 
-#Proportion Catch (Frequency of Occurrence)
+#Proportion Catch (Frequency of Occurrence) ------
 a <- halibut_fixed_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
 b <- sentinel_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
 c <- ITQ_null %>% select(YEAR, TRIP_TYPE, FISHSET_ID)
@@ -917,7 +929,7 @@ isdb_summary <- left_join(isdb_summary, isdb_null_summary, by="TRIP_TYPE") %>%
   mutate(occurance = 100*(sets/nullsets))
 
 
-#combined graph of abundance ---------------------- (halibut, 4VsW, 4X, and snowcrab)
+#combined graph of abundance ----------------------
 
 #gridExtra 
 #gridExtra :: look up 
@@ -970,25 +982,239 @@ C <- ITQ_lengths %>%
 lobster_lengths <- isdb_lengths %>% filter(TRIPCD_ID == 7065)
 unique(lobster_lengths$SET_TYPE)
 
+#summaries (total weight, average weight, mean caught, total caught, strata, gear etc.)--------
 
-#SNOWCRAB
+#SNOWCRAB for ecosystem survey(code 11/MPA areas) ----
 
-snowcrab_lengths <- isdb_lengths %>% filter(TRIPCD_ID == 7061)
+snowcrab_sum_fixed <- isdb_lengths %>% 
+  filter(TRIPCD_ID ==7061) %>%
+  filter(YEAR != 2004) %>%
+  filter(SETCD_ID == 4) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+     )
 
-snowcrab_fixed_lengths <- snowcrab_lengths %>% 
-  filter(SETCD_ID == 4)
+snowcrab_sum_ecosystem <- isdb_lengths %>% 
+  filter(TRIPCD_ID ==7061) %>%
+  filter(YEAR != 2004) %>%
+  filter(SETCD_ID == 11) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR, FISH_LENGTH)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+    count_fish_length = length(FISH_LENGTH),
+    mean_length = mean(FISH_LENGTH)
+  )
+  
 
-D <- snowcrab_fixed_lengths%>%
-  select (YEAR, EST_COMBINED_WT, CMSURVEY, FISH_LENGTH) %>%
-  filter(!is.na(FISH_LENGTH))
 
-
-#Commercial Catches
-silverhake <- isdb %>% filter(TRIPCD_ID == 14) 
-
-snowcrab_lengths <- isdb_lengths %>% filter(TRIPCD_ID ==7061)
 ITQ_lobster <- isdb %>% filter(TRIPCD_ID %in% c(7051, 7065))
 Lobster_surv <- isdb_lengths %>% filter(TRIPCD_ID == 7065)
+
+
+
+# ITQ Survey (Summaries) ------
+
+ITQ_lengths <- isdb_lengths
+
+ ITQ_summary <- isdb_lengths %>% 
+  filter(TRIPCD_ID ==7051) %>%
+  filter(SETCD_ID == 4) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+
+ 
+  ITQ_stratum <- isdb_lengths %>%
+    filter(TRIPCD_ID == 7051) %>%
+    filter(SETCD_ID == 4) %>%
+    select(STRATUM_ID, EST_COMBINED_WT, SET_NO) %>%
+    group_by(STRATUM_ID) %>%
+    summarize (
+      sum_catch = sum(EST_COMBINED_WT), 
+      total_sets = length(SET_NO)
+    )
+ 
+ #Proportion of wolffish sets by stratum  
+  
+ITQ_N <- ITQ_null %>%
+  select(STRATUM_ID, SET_NO) %>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(nullsets = length(unique(SET_NO)))
+
+
+ITQ_SETS <- ITQ %>% 
+  select(STRATUM_ID, SET_NO)%>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(sets = length(unique(SET_NO)))
+
+
+ITQ_summary <- left_join(ITQ_N, ITQ_SETS, by="STRATUM_ID") %>% 
+  mutate(occurance = 100*(sets/nullsets)) 
+
+
+# 4VsW sentinel survey summaries ----
+
+# 4VsW Summaries: 
+
+sentinel_summaries <- isdb %>% 
+  filter(TRIPCD_ID == 7050) %>%
+  filter(SETCD_ID == 5) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT))
+
+sentinel4VsW_stratum <- isdb %>%
+  filter(TRIPCD_ID == 7050) %>%
+  filter(SETCD_ID == 5) %>%
+  select(STRATUM_ID, EST_COMBINED_WT, SET_NO) %>%
+  group_by(STRATUM_ID) %>%
+  summarize (
+    sum_catch = sum(EST_COMBINED_WT), 
+    total_sets = length(SET_NO)
+  )
+
+sentinel_null <- isdb_null 
+
+sentinel_N <- sentinel_null %>%
+  select(STRATUM_ID, SET_NO) %>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(nullset = length(unique(SET_NO)))
+
+sentinel_SETS <- sentinel %>% 
+  select(STRATUM_ID, SET_NO)%>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(set = length(unique(SET_NO)))
+
+
+sentinel_summary <- left_join(sentinel_N,sentinel_SETS, by="STRATUM_ID") %>% 
+  mutate(occurance = 100*(set/nullset))
+
+
+
+
+
+# Shrimp ----
+
+shrimp_summary <- isdb %>% 
+  filter(TRIPCD_ID ==2210) %>%
+  filter(SETCD_ID == 1) %>%
+  select (NAFAREA_ID, EST_COMBINED_WT, EST_NUM_CAUGHT, SET_NO, GEAR) %>%
+  filter(GEAR =="OTB") %>%
+  group_by(NAFAREA_ID) %>%
+  summarize (
+    sum_catch = sum(EST_COMBINED_WT), 
+    total_sets = length(unique(SET_NO)))
+
+shrimp_summary <- isdb %>% 
+  filter(TRIPCD_ID ==2210) %>%
+  filter(SETCD_ID == 1) %>%
+  select (NAFAREA_ID, EST_COMBINED_WT, EST_NUM_CAUGHT, SET_NO, GEAR) %>%
+  filter(GEAR =="OTS") %>%
+  group_by(NAFAREA_ID) %>%
+  summarize (
+    sum_catch = sum(EST_COMBINED_WT), 
+    total_sets = length(unique(SET_NO)))
+
+
+# 4VN Sentinel Survey summaries 
+
+Sentinel_4VN_summary <- isdb_lengths %>%
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 4) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+
+Sentinel4VN_SETS <- isdb_lengths %>% 
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 4) %>%
+  select(YEAR, SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarise(sets = length(unique(SET_NO)))
+
+Sentinel_4VN_summary_SETID_5 <- isdb_lengths %>%
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 5) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+
+  Sentinel4VN_SETS_SETID_5 <- isdb_lengths %>% 
+    filter(TRIPCD_ID == 7052) %>%
+    filter(SETCD_ID == 5) %>%
+    select(YEAR, SET_NO)%>%
+    group_by(YEAR) %>% 
+    summarise(sets = length(unique(SET_NO)))
+
+Sentinel_4VN_summary_SETID6 <- isdb_lengths %>%
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 6)
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+
+Sentinel4VN_SETS_SETID_6 <- isdb_lengths %>% 
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 6) %>%
+  select(YEAR, SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarise(sets = length(unique(SET_NO)))
+
+Sentinel_4VN_summary_SETID_10 <- isdb_lengths %>%
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 10) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT),
+    mean_weight = mean(EST_COMBINED_WT),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT),
+  )
+
+Sentinel4VN_SETS_SETID_10 <- isdb_lengths %>% 
+  filter(TRIPCD_ID == 7052) %>%
+  filter(SETCD_ID == 10) %>%
+  select(YEAR, SET_NO)%>%
+  group_by(YEAR) %>% 
+  summarise(sets = length(unique(SET_NO)))
 
 
 #summaries for est_catches ----------
@@ -1054,81 +1280,8 @@ plot(yrcatch_halibut_longline)
 
 
 
-# Frequency of lengths -------
-snowcrab %>% 
-  ggplot(aes(EST_COMBINED_WT))+
-  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
-  labs(y="Frequency (count)", x='Length (cm)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
-
-# Frequency of ITQ+LOBSTER SURVEY together 
-# NO LENGTHS FOR 7065 
-ITQ_lobster_lengths <- isdb_lengths %>% filter(TRIPCD_ID %in% c(7051, 7065))
-
-ITQ_lobster_lengths %>%
-mutate(lobster = TRIPCD_ID) %>%
-ggplot(aes(FISH_LENGTH))+
-  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
-  labs(y="Frequency (count)", x='Length (cm)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15)) +
-  facet_wrap(~lobster)
-
-#Frequency of sentinel_4VN 
-# no lengths either? multiple set_types 
-sentinel_4VN <- isdb %>% filter(TRIPCD_ID == 7052)
-
-sentinel_4VN_lengths <- isdb_lengths %>% filter(TRIPCD_ID ==7052) 
-
-sentinel_4VN_lengths %>% 
-  ggplot(aes(FISH_LENGTH))+
-  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
-  labs(y="Frequency (count)", x='Length (cm)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
 
 
-# counts of species at length in the sentinel_4VSW -- only 1? not coming up properly? 
-sentinel_4VSW <- isdb %>% filter(TRIPCD_ID == 7050)
-sentinel_4VSW_lengths <- isdb_lengths %>% filter(TRIPCD_ID == 7050)
-
-sentinel_4VSW_lengths %>% 
-  ggplot(aes(FISH_LENGTH))+
-  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
-  labs(y="Frequency (count)", x='Length (cm)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
-
-#COD
-cod <- isdb %>% filter(TRIPCD_ID == 7001)
-cod_lengths <- isdb_lengths %>% filter(TRIPCD_ID ==7001) 
-
-cod_lengths %>% 
-  ggplot(aes(FISH_LENGTH))+
-  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
-  labs(y="Frequency (count)", x='Length (cm)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
-
-#Shrimp
-shrimp <- isdb %>% filter(TRIPCD_ID == 2210)
-
-shrimp_lengths <- isdb_lengths %>% filter (TRIPCD_ID == 2210)
-shrimp_lengths %>% 
-  ggplot(aes(FISH_LENGTH))+
-  geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
-  labs(y="Frequency (count)", x='Length (cm)')+
-  theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15))
-
-                     
                      
 #Playing with gear (boxplots and density) ---------
 # density graphs of how often certain gear types appeared 
