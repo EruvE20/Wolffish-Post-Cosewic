@@ -75,6 +75,69 @@ redfish_null <- read.csv("redfish_null.csv", header = T) %>%
 
 
 
+
+#Data summaries for Strata (4VWX) -----
+
+spring4VsW_lengths <- read.csv("spring4VsW_lengths.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X) %>%
+  select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN)
+
+spring4x_lengths <- read.csv("spring4x_lengths.csv", header = T) %>%
+  filter(TYPE == 1) %>% 
+  select(-X) %>%
+  select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN)
+
+georges_lengths <- read.csv("georges_lengths.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X) %>%
+  select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN)
+
+spring_lengths <- read.csv("spring_lengths.csv", header = T) %>%
+  filter(TYPE == 1) %>% 
+  select(-X) %>%
+  select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN)
+
+
+fall_lengths <- read.csv("fall_lengths.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X) %>%
+  select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN)
+
+redfish_lengths <- read.csv("redfish_lengths.csv", header = T) %>% 
+  select(-X) %>%
+  select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN)
+
+summer_lengths <- read.csv("summer_lengths.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X) %>%
+  select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN)
+summer_null <- read.csv("summer_null.csv", header = T) %>% 
+  filter(TYPE == 1) %>% 
+  select(-X) %>%
+  select (SETNO, STRAT, NAME, TOTWGT, TOTNO)
+
+summer_summaries <- summer_null %>%
+  select(STRAT, SETNO) %>%
+  filter(!is.na(STRAT)) %>%
+  group_by(STRAT) %>% 
+  summarise(nullset = length(unique(SETNO)))
+
+summer_SETS <- summer_lengths %>% 
+  select(STRAT, SETNO, TOTWGT, TOTNO, FLEN)%>%
+  filter(!is.na(STRAT)) %>%
+  group_by(STRAT) %>% 
+  summarise(set = length(unique(SETNO)),
+            sum_catch = sum(TOTWGT),
+            mean_totwgt = mean(TOTWGT),
+            total_count = length(TOTNO) 
+            )
+
+summer_summary <- left_join(summer_summaries, summer_SETS, by="STRAT") %>% 
+  mutate(occurance = 100*(set/nullset))
+
+
+
 #Data Summaries for number of sets per year, per season/survey --------
 yrcatch_spring4VsW <- spring4VsW %>% 
   select(YEAR, SETNO) %>% 
@@ -555,13 +618,6 @@ sl %>%
 #Summer 
 
 #can get summary results for slope and R - do geom text and display in on the graph 
-# filter out 4X from Georges and only use 5Z
-# ask Bill what the 4X survey is in the RV database 
-# changes in length frequency over time - will give stratified mean term 
-#ask Bill about STRANAL 
-# play around with snow crab data - does it represent wolffish? 
-# look at ITQ/Lobster * 
-# snow crab - ask Brent about size/quantity 
 
 #mature
 summer_lengths <- summer_lengths %>% 
@@ -611,11 +667,10 @@ summer_lengths_immature <- summer_lengths %>%
    theme_classic () +
    ggtitle("Summer total lengths") 
 
-grid.arrange(G,H,I, nrow=3) # 6 rows, 3 cols
 
 #Georges 
 
-georges_catchrate <- georges_lengths %>% 
+georges_lengths <- georges_lengths %>% 
   mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
 
 georges_catchrate <- georges_lengths %>% 
@@ -662,50 +717,50 @@ D <- ggplot(georges_catch, aes (YEAR, total_lengths)) +
 #Spring_4x
 
 #mature 
-spring4VsW_catchrate <- spring4VsW_lengths %>% 
+spring4X_catchrate <- spring4x_lengths %>% 
   mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
-str(spring4VsW_catchrate)
 
-spring4VsW_mature <- spring4VsW_catchrate %>% 
+spring4X_mature <- spring4X_catchrate %>% 
   filter(maturity == "mature") %>%
   group_by(YEAR) %>% 
   summarize(total_lengths = length(FLEN)) 
 
-catches <- ggplot(spring4VsW_mature, aes (YEAR, total_lengths)) +
+catches <- ggplot(spring4X_mature, aes (YEAR, total_lengths)) +
   geom_point(color = 'blue') +
   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
   theme_classic () +
-  ggtitle("Spring 4VsW mature") 
+  ggtitle("Spring 4X mature") 
 
 
 #immature 
-spring4VsW_immature <- spring4VsW_catchrate %>% 
+spring4X_immature <- spring4X_catchrate %>% 
   filter(maturity == "immature") %>%
   group_by(YEAR) %>% 
   summarize(total_lengths = length(FLEN)) 
 
-spring_immature <- ggplot(spring4VsW_immature, aes(YEAR, total_lengths)) +
+spring_immature <- ggplot(spring4X_immature, aes(YEAR, total_lengths)) +
   geom_point(color = 'blue') +
   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
   theme_classic () +
-  ggtitle("Spring 4VsW immature")
+  ggtitle("Spring 4X immature")
 
 #Combined
 
-spring4VsW_totalcatch <- spring4VsW_catchrate %>% 
+spring4X_totalcatch <- spring4X_catchrate %>% 
   group_by(YEAR) %>% 
   summarize(total_lengths = length(FLEN)) 
 
-springVsW_totalcatch <- ggplot(spring4VsW_totalcatch, aes(YEAR, total_lengths)) +
+spring4X_totalcatches <- ggplot(spring4X_totalcatch, aes(YEAR, total_lengths)) +
   geom_point(color = 'blue') +
   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
   theme_classic () +
-  ggtitle("Spring 4VsW total")
+  ggtitle("Spring 4X total")
 
-grid.arrange(G,H,I, P, E, D, spring_immature, catches, springVsW_totalcatch, nrow=3, ncol = 3)
+grid.arrange(G,H,I,P,E,D, spring_immature, catches, spring4X_totalcatches, nrow=3, ncol = 3)
+
 
 
 
