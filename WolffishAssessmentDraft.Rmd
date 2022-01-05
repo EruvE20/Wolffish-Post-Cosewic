@@ -23,10 +23,9 @@ knitr::opts_chunk$set(echo = F, message=F, warning=F, error = F, prompt = F)
 setwd("C:/Users/TSITRINL/Documents/SARA/Wolffish/Data")
 data.dir="C:/DFO-MPO/MarDataWrangling/wrangledData"
 
-library(Mar.bycatch)
 library(Mar.datawrangling)
-library(tidyverse)
 library(gridExtra)
+library(tidyverse)
 
 # RV Database -------------------------------------------------------------
 # import and clean data 
@@ -114,6 +113,7 @@ library(mapdata)
 library(marmap)
 library(maptools)
 
+
 NAFODivisions <- rgdal::readOGR(dsn="Divisions.shp")
 NAFODivisions <- spTransform(NAFODivisions,CRS("+proj=longlat +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0"))
 
@@ -123,11 +123,12 @@ canada <- map_data("worldHires", "Canada")
 FortNAFO <- fortify(NAFODivisions)
 
 
-bathy <- getNOAA.bathy(-50, -80, 35, 48, resolution=1,antimeridian = F, keep=T)
+#bathy <- getNOAA.bathy(-50, -80, 35, 48, resolution=1, antimeridian = F, keep=F)
 ```
 
 ```{r, fig.cap="Distribution of Atlantic wolffish catches in the 4VsW RV Survey, 1986-2010, summed by 5 minute aggregation.", fig.align='center'}
 # 4VsW null vs wolffish catches
+require(tidyverse)
 null <- spring4VsW_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
   filter(CODE != 50)
 wolf <-spring4VsW_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
@@ -572,7 +573,7 @@ b <- ggplot(bathy, aes(x=x, y=y))+
   labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")+
   ggtitle("2011-2021")
 
-ggarrange(a,b, nrow=2)
+ggpubr::ggarrange(a,b, nrow=2)
 ```
 
 ```{r, fig.cap="Distribution of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the Georges Bank RV Survey, 1987-2021, summed by 5 minute aggregation.", fig.align='center'}
@@ -796,13 +797,15 @@ ggplot(total, aes(x=YEAR, y=biomass))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(x = "Year", y = "Biomass (kg)")
+  labs(x = "Year", y = "Biomass (kg)")+
+  ggtitle("A")
 
 ggplot(total, aes(x=YEAR, y=abundance, col=maturity, shape=maturity))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(x = "Year", y = "Mean number per tow")
+  labs(x = "Year", y = "Mean number per tow")+
+  ggtitle("B")
 ```
   
   
@@ -851,13 +854,15 @@ ggplot(total, aes(x=YEAR, y=biomass))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(x = "Year", y = "Biomass (kg)")
+  labs(x = "Year", y = "Biomass (kg)")+
+  ggtitle("A")
 
 ggplot(total, aes(x=YEAR, y=abundance, col=maturity, shape=maturity))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(x = "Year", y = "Mean number per tow")
+  labs(x = "Year", y = "Mean number per tow")+
+  ggtitle("B")
 ```
   
   
@@ -906,13 +911,15 @@ ggplot(total, aes(x=YEAR, y=biomass))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(x = "Year", y = "Biomass (tonnes)")
+  labs(x = "Year", y = "Biomass (tonnes)")+
+  ggtitle("A")
 
 ggplot(total, aes(x=YEAR, y=abundance, col=maturity, shape=maturity))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(x = "Year", y = "Mean number per tow (thousands)")
+  labs(x = "Year", y = "Mean number per tow (thousands)")+
+  ggtitle("B")
 ```
 
   
@@ -961,18 +968,20 @@ ggplot(total, aes(x=YEAR, y=biomass))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(x = "Year", y = "Biomass (kg)")
+  labs(x = "Year", y = "Biomass (kg)")+
+  ggtitle("A")
 
 ggplot(total, aes(x=YEAR, y=abundance, col=maturity, shape=maturity))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(x = "Year", y = "Mean number per tow")
+  labs(x = "Year", y = "Mean number per tow")+
+  ggtitle("B")
 ```
 
 
-### Length Frequency Distributions of Wolffish in RV Surveys
-```{r, fig.cap="Length Frequency distributions of wolffish for RV surveys", fig.align='center'}
+### Length Frequency and Catch Rate
+```{r, fig.cap="Length Frequency distributions of wolffish from RV surveys", fig.align='center'}
 #SPRING 4VSW
 j <- spring4VsW_lengths %>% 
   ggplot(aes(FLEN))+
@@ -1040,7 +1049,7 @@ gridExtra::grid.arrange(j,k,l,m,n,o,p, nrow = 2)
 ```
 
   
-```{r, fig.cap="Log Transformed catch rate (total number at length) for each RV survey", fig.align='center'}
+```{r, fig.cap="Log Transformed catch rate (total number at length) for  RV survey", fig.align='center'}
 #Summer 
 
 #mature
@@ -1329,7 +1338,7 @@ snowcrab_null <- snowcrab_null %>%
 
 ### Distribution of Wolffish in Industry Surveys
 ```{r, fig.cap="Distribution of Atlantic wolffish catches in the Halibut Longline Survey, 1998-2021, summed by 10 minute aggregation.", fig.align='center'}
-null <- halibut_longline_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+null <- halibut_longline_null %>%  select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
   filter(SPECCD_ID != 50) %>% 
   filter(grepl("^4|^5", NAFAREA_ID ))
 wolf <-halibut_longline_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
@@ -1413,6 +1422,34 @@ ggplot(bathy, aes(x=x, y=y))+
   labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
 ```
 
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Snowcrab Ecosystem Survey, 2004-2021, summed by 5 minute aggregation.", fig.align='center'}
+null <- snow_eco_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+  filter(SPECCD_ID != 50)
+wolf <- snow_eco_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+  filter(EST_COMBINED_WT > 0) %>% 
+  filter(SPECCD_ID == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-61, -58),
+    ylim = c(43, 47))+
+  geom_point(data=null, aes(x=long, y=lat), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=long, y=lat, size=EST_COMBINED_WT_SUM), alpha = 1)+
+  scale_size(breaks = c(1,2,3))+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
 ```{r, fig.cap="Distribution of Atlantic wolffish catches in the Snowcrab Survey, 2004-2021, summed by 5 minute aggregation.", fig.align='center'}
 null <- snowcrab_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
   filter(SPECCD_ID != 50)
@@ -1439,8 +1476,6 @@ ggplot(bathy, aes(x=x, y=y))+
   guides(fill = FALSE)+
   labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
 ```
-
-
 
 ### Abundance of Wolffish in Industry Surveys
 ```{r, include=FALSE}
@@ -1489,7 +1524,19 @@ ggplot(isdb_summary, aes(YEAR, occurance, colour=TRIP_TYPE))+
   
 
 ### Wolffish Biomass in Industry Surveys
-```{r, fig.cap="Catch per Unit Effort of Wolffish in the Halibut Longline Survey", fig.align='center'}
+```{r, fig.cap="Length Frequency distributions of Atlantic wolffish in the Snowcrab Environmental Survey", fig.align='center'}
+isdb_lengths %>% 
+  filter(TRIPCD_ID == 7061) %>% 
+  filter(SETCD_ID == 11) %>% 
+  ggplot(aes(FISH_LENGTH))+
+  geom_histogram(binwidth = 2, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  ggtitle("Snowcrab Ecosystem Survey")+
+  theme(plot.title = element_text(size = 12))
+```
+
+```{r, fig.cap="Catch per Unit Effort of Atlantic wolffish in the Halibut Longline Survey", fig.align='center'}
 cpue <- halibut_longline %>% 
   select(YEAR, EST_COMBINED_WT, NUM_HOOK_HAUL) %>% 
   mutate(sum = (EST_COMBINED_WT/NUM_HOOK_HAUL)*1000) %>% 
@@ -1507,7 +1554,7 @@ ggplot(cpue, aes(YEAR, CPUE))+
 ```
   
 
-```{r, fig.cap="Catch per Unit Effort of Wolffish in the Sentinel Longline Survey", fig.align='center'}
+```{r, fig.cap="Catch per Unit Effort of Atlantic wolffish in the Sentinel Longline Survey", fig.align='center'}
 pue <- sentinel %>% 
   select(YEAR, EST_COMBINED_WT, NUM_HOOK_HAUL) %>% 
   mutate(sum = (EST_COMBINED_WT/NUM_HOOK_HAUL)*1000) %>% 
@@ -1525,7 +1572,7 @@ ggplot(cpue, aes(YEAR, CPUE))+
 ```
   
 
-```{r, fig.cap="Catch per Trap of Wolffish in the ITQ/Lobster Survey", fig.align='center'}
+```{r, fig.cap="Catch per Trap of Atlantic wolffish in the ITQ/Lobster Survey", fig.align='center'}
 a <- ITQ %>%  select(YEAR, EST_COMBINED_WT) %>% 
   mutate(survey="ITQ")
 
@@ -1542,7 +1589,7 @@ ggplot(cpue, aes(YEAR, CPUE))+
   theme_classic()+
   labs(title = "ITQ/Lobster Surveys Uncorrected CPUE",
        x = 'Year',
-       y = 'CPUE (kg/trap haul)')
+       y = 'CPUE')
 ```
   
 
