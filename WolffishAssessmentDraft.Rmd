@@ -751,7 +751,6 @@ ggplot(rv_summary, aes(YEAR, occurance, colour=SURVEY))+
 
 ```
   
-  
 ```{r, fig.cap="Stratified total biomass (A) and abundance (B) of immature and immature Atlantic wolffish in the 4VsW RV Survey, 1986-2010.", fig.align='center'}
 strat <- spring4VsW %>% 
   group_by(YEAR, STRAT) %>% 
@@ -808,7 +807,6 @@ ggplot(total, aes(x=YEAR, y=abundance, col=maturity, shape=maturity))+
   ggtitle("B")
 ```
   
-  
 ```{r, fig.cap="Stratified total biomass (A) and abundance (B) of immature and immature Atlantic wolffish in the 4X RV Survey, 2012-2020.", fig.align='center'}
 strat <- spring4X %>% 
   group_by(YEAR, STRAT) %>% 
@@ -864,7 +862,6 @@ ggplot(total, aes(x=YEAR, y=abundance, col=maturity, shape=maturity))+
   labs(x = "Year", y = "Mean number per tow")+
   ggtitle("B")
 ```
-  
   
 ```{r, fig.cap="Stratified total biomass (A) and abundance (B) of immature and immature Atlantic wolffish in the Summer RV Survey, 1970-2021.", fig.align='center'}
 strat <- summer %>% 
