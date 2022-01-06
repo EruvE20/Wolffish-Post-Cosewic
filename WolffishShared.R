@@ -1069,6 +1069,13 @@ snowcrab_sum_ecosystem <- isdb_lengths %>%
     mean_length = mean(FISH_LENGTH)
   )
   
+snowcrab_sum_ecosystem %>% 
+  ggplot(aes(FISH_LENGTH))+
+  geom_histogram(binwidth = 5, col="black", fill="green", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15))
 
 
 ITQ_lobster <- isdb %>% filter(TRIPCD_ID %in% c(7051, 7065))
@@ -1338,34 +1345,72 @@ plot(yrcatch_halibut_longline)
 
 
                      
-#Playing with gear (boxplots and density) ---------
-# density graphs of how often certain gear types appeared 
-str(isdb)
-isdb_gear <- isdb %>%
-  select (YEAR, TRIPCD_ID, GEARCD_ID, EST_COMBINED_WT) 
 
-isdb_gear$GEARCD_ID <- as.factor(isdb_gear$GEARCD_ID)
-str(isdb_gear)
+# landings for ISDB -----
 
-isdb_gear %>%
-  mutate(years = ifelse(YEAR <1995, 'Pre', 'Post')) %>%
-  ggplot(aes(x=GEARCD_ID)) +
-  geom_density (fill="#69b3a2", color="#e9ecef", alpha=0.8) +
+
+#cbp2 <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+          #"#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+isdb <- read.csv("isdb.csv", header = T) %>%
+  select(-X)
+
+industry_sampled <- isdb %>%
+  ungroup() %>%
+  select(YEAR, TRIP_TYPE)
+
+industry_sampled <- as.data.frame(table(industry_sampled))
+industry_sampled$sampled <- ifelse(industry_sampled$Freq>0, 'X', '')
+
+#convert to wide format
+industry_sampled <- industry_sampled %>%
+  select(-c(Freq))
+
+industry_sampled <- spread(industry_sampled, YEAR, sampled)
+
+
+
+landings_industrial <- read.csv("isdb.csv", header = T) %>%
+  select(-X) %>%
+  filter(TRIP_TYPE %in% c( "COD", "HADDOCK", "POLLOCK", "CRAB", "FLATFISH", "HALIBUT", "LOBSTER", "REDFISH", "SCALLOP", "SHRIMP")) %>%
+  select(YEAR, STRATUM_ID, TRIPCD_ID, SET_NO, EST_KEPT_WT, TRIP_TYPE) %>%
+  replace(is.na(.), 0) %>%
+  group_by(YEAR) %>%
+  summarize(total_wt = sum(EST_KEPT_WT), 
+            triptype = factor (TRIP_TYPE))
+
+landings_commericalsurveys <- read.csv("isdb.csv", header = T) %>%
+  select(-X) %>%
+  filter(TRIP_TYPE %in% c( "4VN SENTINEL SURVEY", "4VSW SENTINEL PROGRAM", "HALIBUT LONGLINE SURVEY", "SNOWCRAB SURVEY", "LOBSTER SURVEY")) %>%
+  select(YEAR, STRATUM_ID, TRIPCD_ID, SET_NO, EST_KEPT_WT, TRIP_TYPE) %>%
+  replace(is.na(.), 0) %>%
+  group_by(YEAR) %>%
+  summarize(total_wt = sum(EST_KEPT_WT), 
+            triptype = factor (TRIP_TYPE))
+
+landings %>%
+  ggplot(aes(x=YEAR, y=total_wt, fill=triptype)) + 
+  geom_bar( stat="identity") +
+  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
+  theme_classic() 
+
+grid.arrange()
+
+  
+str(landings)
+
+#landings %>%
+  ggplot(aes(x=YEAR, y=total_wt, color = triptype))+
+  geom_point() +
+  geom_line()+
+  theme_classic()
+
+#landings %>%
+  ggplot(aes(x=YEAR, y=total_wt))+
+  geom_point() +
+  geom_line()+
   theme_classic() +
-  facet_wrap(~years)
+  facet_wrap(~triptype)
 
-# bar plot/ box plot (more informative) x = gear, y= est_weight 
-# combine similar gear (e.g all long line, all trawls togeahter) -- do mutate to combine (do a casewhen not ifelse)
-
-isdb_boxplot <- isdb %>%
-  select(YEAR, TRIPCD_ID, GEARCD_ID, EST_COMBINED_WT) %>%
-  mutate(gear_category = case_when(GEARCD_ID %in% c(50, 51, 53) ~ "Longline",
-                                   GEARCD_ID %in% c(9, 11, 12, 13, 15, 16, 19, 192, 110) ~ "Trawl",
-                                   GEARCD_ID %in% c(21, 22) ~"Seine", 
-                                   GEARCD_ID == 62 ~"Covered Pots", 
-                                   GEARCD_ID == 71 ~"Dredge")) 
-isdb_boxplot %>%
-  ggplot(aes(x=gear_category, y= EST_COMBINED_WT)) + 
-  geom_boxplot(outlier.colour="red", outlier.shape=8,
-               outlier.size=4)
-
+ 
+  

@@ -58,7 +58,20 @@ snowcrab_sum_ecosystem %>%
                                                "Mean length of Wolffish", 
                                                "Max Length of Wolffish")) %>%
   kable_classic(full_width = T) 
-                 
+
+snowcrab_frequency <- isdb_lengths %>% 
+  filter(TRIPCD_ID ==7061) %>%
+  filter(YEAR != 2004) %>%
+  filter(SETCD_ID == 11) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR, FISH_LENGTH)
+
+snowcrab_frequency %>%
+  ggplot(aes(FISH_LENGTH))+
+  geom_histogram(binwidth = 5, col="black", fill="green", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15))
 
 ```
 
@@ -72,7 +85,6 @@ library(kableExtra)
 
 isdb_lengths <- read.csv('isdb_lengths.csv')
 
-ITQ_lengths <- isdb_lengths
 
 ITQ_summary <- isdb_lengths %>% 
   filter(TRIPCD_ID ==7051) %>%
@@ -520,7 +532,8 @@ spring4X_summary %>%
                                                "Proportion of Wolffish caught")) %>%
   kable_classic(full_width = T)
 ```
-```
+
+
 
 
 
