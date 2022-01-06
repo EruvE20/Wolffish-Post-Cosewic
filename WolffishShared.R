@@ -1,11 +1,7 @@
-library(dplyr)
 library(ggplot2)
 library(tidyverse)
 library(gridExtra)
 library(scales)
-install.packages("gridExtra")
-install.packages("rmarkdown")
-install.packages("scales")
 
 ##Wolffish Shared Project File
 

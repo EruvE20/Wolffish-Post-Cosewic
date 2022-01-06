@@ -2,9 +2,7 @@
 title: "Atlantic Wolffish Post-COSEWIC Assessment"
 authors: "Elizabetha Tsitrin, Kayla Silver, Daphne Themelis"
 date: "`r format(Sys.Date(), format='%B %d %Y')`"  
-output: html_document
 ---
-  
   
 **Purpose:** Provide an assessment of Atlantic Wolffish population trends in the Maritimes Region (Scotian Shelf) to inform the existing Recovery Strategy and Management Plan, and help guide future management actions and prioritize conservation measures. Externally, this information could support the next re-assessment of the species by the Committee on the Status of Endangered Wildlife in Canada (COSEWIC).
 
@@ -15,7 +13,7 @@ output: html_document
 
 
 ```{r, echo=F, warning=F, message=F}
-knitr::opts_chunk$set(echo = F, message=F, warning=F)
+knitr::opts_chunk$set(echo = F, message=F, warning=F, error = F, prompt = F, results='asis')
 ```
 
 
@@ -24,8 +22,8 @@ knitr::opts_chunk$set(echo = F, message=F, warning=F)
 setwd("C:/Users/TSITRINL/Documents/SARA/Wolffish/Data")
 data.dir="C:/DFO-MPO/MarDataWrangling/wrangledData"
 
-library(Mar.bycatch)
 library(Mar.datawrangling)
+library(gridExtra)
 library(tidyverse)
 
 # RV Database -------------------------------------------------------------
@@ -106,10 +104,538 @@ redfish_null <- read.csv("redfish_null.csv", header = T) %>%
 
 # Research Vessel Surveys
 ### Distribution of Wolffish in RV Surveys
+```{r, include = FALSE}
+library(sp)
+library(rgdal)
+library(mapdata)
+library(marmap)
+library(maptools)
 
-```{r}
-#maps
+
+NAFODivisions <- rgdal::readOGR(dsn="Divisions.shp")
+NAFODivisions <- spTransform(NAFODivisions,CRS("+proj=longlat +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0"))
+
+states <- map_data("state")
+usa <- subset(states,region == "maine")
+canada <- map_data("worldHires", "Canada")
+FortNAFO <- fortify(NAFODivisions)
+
+
+bathy <- getNOAA.bathy(-50, -80, 35, 48, resolution=1, antimeridian = F, keep=T)
 ```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the 4VsW RV Survey, 1986-2010, summed by 5 minute aggregation.", fig.align='center', fig.height = 3}
+# 4VsW null vs wolffish catches
+
+null <- spring4VsW_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+wolf <-spring4VsW_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+    filter(TOTWGT > 0) %>% 
+  filter(CODE == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-63.5, -56.5),
+    ylim = c(42.5, 46))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
+```{r, fig.cap="Distribution of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the 4VsW RV Survey, 1986-2010, summed by 5 minute aggregation.", fig.align='center', fig.height = 7}
+mature <- spring4VsW_lengths %>% select(LATITUDE, LONGITUDE, MISSION, SETNO, FLEN) %>% 
+  filter(FLEN > 53) %>% 
+  group_by(MISSION, SETNO) %>% 
+  mutate(count = length(FLEN)) %>% 
+  ungroup() %>% 
+  select(-FLEN) %>% 
+  distinct(MISSION, SETNO, .keep_all=T)
+mature <- as.data.frame(mature)
+
+immature <- spring4VsW_lengths %>% select(LATITUDE, LONGITUDE, MISSION, SETNO, FLEN) %>% 
+  filter(FLEN <= 53) %>% 
+  group_by(MISSION, SETNO) %>% 
+  mutate(count = length(FLEN)) %>% 
+  ungroup() %>% 
+  select(-FLEN) %>% 
+  distinct(MISSION, SETNO, .keep_all=T)
+immature <- as.data.frame(immature)
+
+null <- spring4VsW_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+
+
+mature <- Mar.utils::aggregator(mature, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "count", agg.minutes = 5) 
+immature <- Mar.utils::aggregator(immature, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "count", agg.minutes = 5) 
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5)
+
+a <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-63.5, -56.5),
+    ylim = c(42.5, 46))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=immature, aes(x=LONGITUDE, y=LATITUDE, size=count_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Number at length", x = "Latitude", y = "Longitude", title="Atlantic wolffish 1-53 cm")
+
+b <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-63.5, -56.5),
+    ylim = c(42.5, 46))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=mature, aes(x=LONGITUDE, y=LATITUDE, size=count_SUM), alpha = 1)+
+  scale_size(breaks = c(2,4,6))+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Number at length", x = "Latitude", y = "Longitude", title="Atlantic wolffish >53 cm")
+
+ggpubr::ggarrange(a,b, nrow=2)
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the 4X RV Survey, 2012-2020, summed by 5 minute aggregation.", fig.align='center', fig.height = 3}
+# 4x null vs wolffish catches
+null <- spring4X_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+wolf <-spring4X_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -62),
+    ylim = c(42, 46))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
+```{r, fig.cap="Distribution of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the 4X RV Survey, 2012-2020, summed by 5 minute aggregation.", fig.align='center', fig.height = 7}
+mature <- spring4x_lengths %>% select(LATITUDE, LONGITUDE, MISSION, SETNO, FLEN) %>% 
+  filter(FLEN > 53) %>% 
+  group_by(MISSION, SETNO) %>% 
+  mutate(count = length(FLEN)) %>% 
+  ungroup() %>% 
+  select(-FLEN) %>% 
+  distinct(MISSION, SETNO, .keep_all=T)
+mature <- as.data.frame(mature)
+
+immature <- spring4x_lengths %>% select(LATITUDE, LONGITUDE, MISSION, SETNO, FLEN) %>% 
+  filter(FLEN <= 53) %>% 
+  group_by(MISSION, SETNO) %>% 
+  mutate(count = length(FLEN)) %>% 
+  ungroup() %>% 
+  select(-FLEN) %>% 
+  distinct(MISSION, SETNO, .keep_all=T)
+immature <- as.data.frame(immature)
+
+null <- spring4X_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+
+
+mature <- Mar.utils::aggregator(mature, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "count", agg.minutes = 5) 
+immature <- Mar.utils::aggregator(immature, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "count", agg.minutes = 5) 
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5)
+
+a <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -62),
+    ylim = c(42, 46))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=immature, aes(x=LONGITUDE, y=LATITUDE, size=count_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Number at length", x = "Latitude", y = "Longitude", title="Atlantic wolffish 1-53 cm")
+
+b <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -62),
+    ylim = c(42, 46))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=mature, aes(x=LONGITUDE, y=LATITUDE, size=count_SUM), alpha = 1)+
+  scale_size(range= c(1,2))+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Number at length", x = "Latitude", y = "Longitude", title="Atlantic wolffish >53 cm")
+
+ggpubr::ggarrange(a,b, nrow=2)
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Spring RV Survey, 1979-1985, summed by 5 minute aggregation.", fig.align='center', fig.height = 3}
+# spring null vs wolffish catches
+null <- spring_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+wolf <-spring_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(TOTWGT >0) %>% 
+  filter(CODE == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -57),
+    ylim = c(42, 46.5))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Summer RV Survey, 1970-2021, summed by 15 minute aggregation.", fig.align='center', fig.height = 7}
+null_a <- summer_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT, YEAR) %>% 
+  filter(YEAR < 2011) %>% 
+  filter(CODE != 50)
+wolf_a <-summer_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT, YEAR) %>% 
+  filter(YEAR < 2011) %>% 
+  filter(CODE == 50)
+null_b <- summer_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT, YEAR) %>% 
+  filter(YEAR > 2010) %>% 
+  filter(CODE != 50)
+wolf_b <-summer_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT, YEAR) %>% 
+  filter(YEAR > 2010) %>% 
+  filter(TOTWGT > 0) %>% 
+  filter(CODE == 50)
+
+
+null_a <- Mar.utils::aggregator(null_a, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 15) 
+wolf_a <- Mar.utils::aggregator(wolf_a, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 15) 
+null_b <- Mar.utils::aggregator(null_b, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 15) 
+wolf_b <- Mar.utils::aggregator(wolf_b, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 15) 
+
+
+a <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -57),
+    ylim = c(41.5, 47.5))+
+  geom_point(data=null_a, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf_a, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  scale_size(breaks = c(40,80,120,160,200))+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")+
+  ggtitle("1970-2010")
+
+b <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -57),
+    ylim = c(41.5, 47.5))+
+  geom_point(data=null_b, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf_b, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")+
+  ggtitle("2011-2021")
+
+ggpubr::ggarrange(a,b, nrow=2)
+```
+
+```{r, fig.cap="Distribution of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the Summer RV Survey, 1970-2021, summed by 15 minute aggregation.", fig.align='center', fig.height = 7}
+mature <- summer_lengths %>% select(LATITUDE, LONGITUDE, MISSION, SETNO, FLEN) %>% 
+  filter(FLEN > 53) %>% 
+  group_by(MISSION, SETNO) %>% 
+  mutate(count = length(FLEN)) %>% 
+  ungroup() %>% 
+  select(-FLEN) %>% 
+  distinct(MISSION, SETNO, .keep_all=T)
+mature <- as.data.frame(mature)
+
+immature <- summer_lengths %>% select(LATITUDE, LONGITUDE, MISSION, SETNO, FLEN) %>% 
+  filter(FLEN <= 53) %>% 
+  group_by(MISSION, SETNO) %>% 
+  mutate(count = length(FLEN)) %>% 
+  ungroup() %>% 
+  select(-FLEN) %>% 
+  distinct(MISSION, SETNO, .keep_all=T)
+immature <- as.data.frame(immature)
+
+null <- summer_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+
+
+mature <- Mar.utils::aggregator(mature, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "count", agg.minutes = 15) 
+immature <- Mar.utils::aggregator(immature, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "count", agg.minutes = 15) 
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 15)
+
+a <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -57),
+    ylim = c(41.5, 47.5))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=immature, aes(x=LONGITUDE, y=LATITUDE, size=count_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Number at length", x = "Latitude", y = "Longitude", title="Atlantic wolffish 1-53 cm")
+
+b <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -57),
+    ylim = c(41.5, 47.5))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=mature, aes(x=LONGITUDE, y=LATITUDE, size=count_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Number at length", x = "Latitude", y = "Longitude", title="Atlantic wolffish >53 cm")
+
+ggpubr::ggarrange(a,b, nrow=2)
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Fall RV Survey, 1978-1984, summed by 5 minute aggregation.", fig.align='center', fig.height = 3}
+# fall null vs wolffish catches
+null <- fall_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+wolf <-fall_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(TOTWGT > 0) %>% 
+  filter(CODE == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -57),
+    ylim = c(42, 47))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Redfish RV Survey, 1982-1988, summed by 5 minute aggregation.", fig.align='center', fig.height = 3}
+null <- redfish_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+wolf <-redfish_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(TOTWGT >0) %>% 
+  filter(CODE == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-66, -56.5),
+    ylim = c(41.5, 46))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Georges Bank RV Survey, 1987-2021, summed by 5 minute aggregation.", fig.align='center', fig.height = 7}
+# georges null vs wolffish catches
+null_a <- georges_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT, YEAR) %>% 
+  filter(YEAR < 2011) %>% 
+  filter(CODE != 50)
+wolf_a <-georges_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT, YEAR) %>% 
+  filter(YEAR < 2011) %>%
+  filter(TOTWGT > 0) %>% 
+  filter(CODE == 50)
+null_b <- georges_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT, YEAR) %>% 
+  filter(YEAR > 2010) %>% 
+  filter(CODE != 50)
+wolf_b <-georges_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT, YEAR) %>% 
+  filter(YEAR > 2010) %>% 
+  filter(TOTWGT > 0) %>% 
+  filter(CODE == 50)
+
+
+null_a <- Mar.utils::aggregator(null_a, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+wolf_a <- Mar.utils::aggregator(wolf_a, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+null_b <- Mar.utils::aggregator(null_b, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+wolf_b <- Mar.utils::aggregator(wolf_b, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5) 
+
+
+a <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-70, -65.7),
+    ylim = c(40, 42.5))+
+  geom_point(data=null_a, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf_a, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")+
+  ggtitle("1987-2010")
+
+b <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-70, -65.7),
+    ylim = c(40, 42.5))+
+  geom_point(data=null_b, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf_b, aes(x=LONGITUDE, y=LATITUDE, size=TOTWGT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")+
+  ggtitle("2011-2021")
+
+ggpubr::ggarrange(a,b, nrow=2)
+```
+
+```{r, fig.cap="Distribution of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the Georges Bank RV Survey, 1987-2021, summed by 5 minute aggregation.", fig.align='center', fig.height = 7}
+mature <- georges_lengths %>% select(LATITUDE, LONGITUDE, MISSION, SETNO, FLEN) %>% 
+  filter(FLEN > 53) %>% 
+  group_by(MISSION, SETNO) %>% 
+  mutate(count = length(FLEN)) %>% 
+  ungroup() %>% 
+  select(-FLEN) %>% 
+  distinct(MISSION, SETNO, .keep_all=T)
+mature <- as.data.frame(mature)
+
+immature <- georges_lengths %>% select(LATITUDE, LONGITUDE, MISSION, SETNO, FLEN) %>% 
+  filter(FLEN <= 53) %>% 
+  group_by(MISSION, SETNO) %>% 
+  mutate(count = length(FLEN)) %>% 
+  ungroup() %>% 
+  select(-FLEN) %>% 
+  distinct(MISSION, SETNO, .keep_all=T)
+immature <- as.data.frame(immature)
+
+null <- georges_null %>% select(LATITUDE, LONGITUDE, CODE, TOTWGT) %>% 
+  filter(CODE != 50)
+
+
+mature <- Mar.utils::aggregator(mature, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "count", agg.minutes = 5) 
+immature <- Mar.utils::aggregator(immature, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "count", agg.minutes = 5) 
+null <- Mar.utils::aggregator(null, lat.field = "LATITUDE", lon.field = "LONGITUDE", agg.fields = "TOTWGT", agg.minutes = 5)
+
+a <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-70, -65.7),
+    ylim = c(40, 42.5))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=immature, aes(x=LONGITUDE, y=LATITUDE, size=count_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Number at length", x = "Latitude", y = "Longitude", title="Atlantic wolffish 1-53 cm")
+
+b <- ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-70, -65.7),
+    ylim = c(40, 42.5))+
+  geom_point(data=null, aes(x=LONGITUDE, y=LATITUDE), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=mature, aes(x=LONGITUDE, y=LATITUDE, size=count_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Number at length", x = "Latitude", y = "Longitude", title="Atlantic wolffish >53 cm")
+
+ggpubr::ggarrange(a,b, nrow=2)
+```
+=
 
 
 ### Abundance of Wolffish in RV Surveys
@@ -215,7 +741,6 @@ rv_summary <- left_join(rv_summary, rv_null_summary, by=c("SURVEY", "YEAR")) %>%
 
 ```
       
-
 ```{r, fig.cap="Percent occurance of wolffish in survey sets", fig.align='center'}
 ggplot(rv_summary, aes(YEAR, occurance, colour=SURVEY))+
   geom_line()+
@@ -224,223 +749,346 @@ ggplot(rv_summary, aes(YEAR, occurance, colour=SURVEY))+
 
 ```
   
+```{r, fig.cap="Stratified biomass of Atlantic wolffish in the 4VsW RV Survey, 1986-2010, with five-year running mean (blue).", fig.align='center'}
+strat <- spring4VsW_null %>% 
+  filter(STRAT %in%(397:411)) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(numsets = length(unique(SETNO)))
 
-```{r, fig.cap="Abundance of immature and immature Wolffish in the RV Surveys", fig.align='center'}
+catch <- spring4VsW %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(weight = sum(TOTWGT/standard_dist),
+            wolfsets = length(unique(SETNO)))
 
-spring4VsW_lengths$SURVEY <- "4VsW"
-spring4x_lengths$SURVEY <- "4X"
-georges_lengths$SURVEY <- "Georges Bank"
-spring_lengths$SURVEY <- "Spring"
-summer_lengths$SURVEY <- "Summer"
-fall_lengths$SURVEY <- "Fall"
-redfish_lengths$SURVEY <- "Redfish"
+area <- spring4VsW_null %>% 
+  filter(STRAT %in%(397:411)) %>% 
+  group_by(STRAT) %>% 
+  distinct(AREA.GSSTRATUM) %>% 
+  mutate(swept = AREA.GSSTRATUM/0.0118006)
 
-aa <- georges_lengths %>%
-  filter (TYPE == 1) %>%
-  select (YEAR, FLEN, SURVEY)
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(catch, by=c('YEAR', 'STRAT')) %>% 
+  mutate(biomass = (weight/numsets)*swept) %>% 
+  mutate(occurance = (wolfsets/numsets)*100) %>% 
+  mutate(area_occupied = (wolfsets/numsets)*AREA.GSSTRATUM) %>% 
+  replace(is.na(.), 0)
 
-bb <- summer_lengths %>%
-  filter (TYPE == 1) %>%
-  select (YEAR, FLEN, SURVEY)
+total <- summary_strat%>% 
+  group_by(YEAR) %>% 
+  summarise(biomass = sum(biomass)*0.001,
+            total_area = sum(AREA.GSSTRATUM),
+            area_occupied = sum(area_occupied),
+            percent_area = (area_occupied/total_area)*100,
+            occurance = mean(occurance))
 
-cc <- fall_lengths  %>%
-filter (TYPE == 1) %>%
-  select (YEAR, FLEN, SURVEY)
-
-dd <- spring_lengths %>%
-  filter (TYPE == 1) %>%
-  select (YEAR, FLEN, SURVEY)
-
-ee <- spring4VsW_lengths  %>%
-filter (TYPE == 1) %>%
-  select (YEAR, FLEN, SURVEY)
-
-ff <- spring4x_lengths %>%
-  filter (TYPE == 1) %>%
-  select (YEAR, FLEN, SURVEY)
-
-gg <- redfish_lengths %>%
-filter (TYPE == 1) %>%
-  select (YEAR, FLEN, SURVEY)
-
-survey_lengths <- rbind(aa, bb, cc, dd, ee, ff, gg)
-
-sl <- survey_lengths %>%
-mutate(maturity = ifelse(FLEN <53, 'immature', 'mature'))
-
-sl %>% 
-  group_by(YEAR, maturity, SURVEY) %>% 
-  drop_na(maturity) %>%
-  summarize(abundance = length(FLEN)) %>% 
-  ggplot(aes(x=YEAR, y=abundance, col=maturity))+
-  geom_line()+
+library(zoo)
+ggplot(total, aes(x=YEAR, y=biomass))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  # geom_smooth(method = "loess", se = F)+
+  geom_point(aes(y=rollmean(biomass, 5, na.pad = T)),
+             col="blue", size=2)+
+  geom_line(aes(y=rollmean(biomass, 5, na.pad = T)),
+            col="blue")+
   theme_classic()+
-  facet_wrap(~SURVEY, scales = "free_x")
+  labs(x = "Year", y = "Biomass (tonnes)")
+```
+
+```{r, fig.cap="Stratified abundance of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the 4VsW RV Survey, 1986-2010, with five-year running means.", fig.align='center'}
+abun <- spring4VsW_lengths %>% 
+  mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT, maturity) %>% 
+  summarize(count = sum(length(FLEN)/standard_dist))
+
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(abun, by=c('YEAR', 'STRAT')) %>% 
+  mutate(count = ifelse(is.na(count), 0, count)) %>% 
+  mutate(abundance = (count/numsets)*swept) 
+
+total <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na()
+
+totalm <- total %>% filter(maturity=="mature")
+totali <- total %>% filter(maturity=="immature")
+
+ggplot(total, aes(x=YEAR, y=abundance, shape=maturity))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  # geom_smooth(method = "loess", se = F)+
+  geom_point(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+             size=2, color="#00D712")+
+  geom_line(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+            color = "#00D712", size=1)+
+    geom_point(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+             size=2, color="blue")+
+  geom_line(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+            color = "blue", size=1)+
+  theme_classic()+
+  guides(shape = guide_legend(override.aes = list(color = c("blue", "#00D712"))))+
+  scale_y_continuous(labels=scales::comma)+
+  labs(x = "Year", y = "Number at Length")
 ```
   
+```{r, fig.cap="Stratified biomass of Atlantic wolffish in the 4X RV Survey, 2012-2020, with two-year running mean (blue).", fig.align='center'}
+strat <- spring4X_null %>% 
+  filter(STRAT %in%(440:495)) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(numsets = length(unique(SETNO)))
 
+catch <- spring4X %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(weight = sum(TOTWGT/standard_dist),
+            wolfsets = length(unique(SETNO)))
 
-```{r, fig.cap="Log Transformed catch rate (total number at length) for each RV survey", fig.align='center'}
-#Summer 
+area <- spring4X_null %>% 
+  filter(STRAT %in%(440:495)) %>% 
+  group_by(STRAT) %>% 
+  distinct(AREA.GSSTRATUM) %>% 
+  mutate(swept = AREA.GSSTRATUM/0.0118006)
 
-#mature
-summer_lengths <- summer_lengths %>% 
-  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(catch, by=c('YEAR', 'STRAT')) %>% 
+  mutate(biomass = (weight/numsets)*swept) %>% 
+  mutate(occurance = (wolfsets/numsets)*100) %>% 
+  mutate(area_occupied = (wolfsets/numsets)*AREA.GSSTRATUM) %>% 
+  replace(is.na(.), 0)
 
-
-summer_lengths_mature <- summer_lengths %>% 
-  filter(maturity == 'mature')%>%
+total <- summary_strat%>% 
   group_by(YEAR) %>% 
-  summarize(total_lengths = length(FLEN)) 
+  summarise(biomass = sum(biomass)*0.001,
+            total_area = sum(AREA.GSSTRATUM),
+            area_occupied = sum(area_occupied),
+            percent_area = (area_occupied/total_area)*100,
+            occurance = mean(occurance))
 
+ggplot(total, aes(x=YEAR, y=biomass))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  geom_point(aes(y=rollmean(biomass, 2, na.pad = T)),
+             col="blue", size=2)+
+  geom_line(aes(y=rollmean(biomass, 2, na.pad = T)),
+            col="blue")+
+  theme_classic()+
+  labs(x = "Year", y = "Biomass (tonnes)")
+```
 
-H <- ggplot(summer_lengths_mature, aes (YEAR, total_lengths)) +
-  geom_point(color = 'blue') +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-  theme_classic () +
-  ggtitle("Summer mature (>53)") 
+```{r, fig.cap="Stratified abundance of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the 4X RV Survey, 2012-2020, with two-year running means.", fig.align='center'}
+abun <- spring4x_lengths %>% 
+  mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT, maturity) %>% 
+  summarize(count = sum(length(FLEN)/standard_dist))
 
-#immature
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(abun, by=c('YEAR', 'STRAT')) %>% 
+  mutate(count = ifelse(is.na(count), 0, count)) %>% 
+  mutate(abundance = (count/numsets)*swept) 
 
-summer_lengths_immature <- summer_lengths %>% 
-  filter(maturity == 'immature')%>%
-  group_by(YEAR) %>% 
-  summarize(total_lengths = length(FLEN)) 
-  
+total <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na()
 
- G <- ggplot(summer_lengths_immature, aes (YEAR, total_lengths)) +
-  geom_point(color = 'blue') +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-  theme_classic () +
-  ggtitle("Summer immature (<53)") 
- 
- 
+totalm <- total %>% filter(maturity=="mature")
+totali <- total %>% filter(maturity=="immature")
 
-#all length groups 
- summer_lengths_total <- summer_lengths %>% 
-   group_by(YEAR) %>% 
-   summarize(total_lengths = length(FLEN)) 
- 
- 
- I <- ggplot(summer_lengths_total, aes (YEAR, total_lengths)) +
-   geom_point(color = 'blue') +
-   scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-   theme_classic () +
-   ggtitle("Summer total lengths") 
-
-grid.arrange(G,H,I, nrow=3) # 6 rows, 3 cols
-
-#Georges 
-
-georges_catchrate <- georges_lengths %>% 
-  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
-
-georges_catchrate <- georges_lengths %>% 
-  filter(maturity ==  'mature') %>%
-  group_by(YEAR) %>% 
-  summarize(total_lengths = length(FLEN)) 
-
-
-E <- ggplot(georges_catchrate, aes (YEAR, total_lengths)) +
-  geom_point(color = 'blue') +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-  theme_classic () +
-  ggtitle("Georges Bank (5z) mature") 
-
-# immature 
-georges_catchrates <- georges_lengths %>% 
-  filter(maturity ==  'immature') %>%
-  group_by(YEAR) %>% 
-  summarize(total_lengths = length(FLEN)) 
-
-
-P <- ggplot(georges_catchrates, aes (YEAR, total_lengths)) +
-  geom_point(color = 'blue') +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-  theme_classic () +
-  ggtitle("Georges Bank (5z) immature") 
-
-#totals of georges bank
-georges_catch <- georges_lengths %>% 
-  group_by(YEAR) %>% 
-  summarize(total_lengths = length(FLEN)) 
-
-
-D <- ggplot(georges_catch, aes (YEAR, total_lengths)) +
-  geom_point(color = 'blue') +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-  theme_classic () +
-  ggtitle("Georges Bank (5z) total") 
-
-
-#Spring_4x
-
-#mature 
-spring4VsW_catchrate <- spring4VsW_lengths %>% 
-  mutate(maturity = ifelse(FLEN <53, 'immature', 'mature')) 
-str(spring4VsW_catchrate)
-
-spring4VsW_mature <- spring4VsW_catchrate %>% 
-  filter(maturity == "mature") %>%
-  group_by(YEAR) %>% 
-  summarize(total_lengths = length(FLEN)) 
-
-catches <- ggplot(spring4VsW_mature, aes (YEAR, total_lengths)) +
-  geom_point(color = 'blue') +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-  theme_classic () +
-  ggtitle("Spring 4VsW mature") 
-
-
-#immature 
-spring4VsW_immature <- spring4VsW_catchrate %>% 
-  filter(maturity == "immature") %>%
-  group_by(YEAR) %>% 
-  summarize(total_lengths = length(FLEN)) 
-
-spring_immature <- ggplot(spring4VsW_immature, aes(YEAR, total_lengths)) +
-  geom_point(color = 'blue') +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-  theme_classic () +
-  ggtitle("Spring 4VsW immature")
-
-#Combined
-
-spring4VsW_totalcatch <- spring4VsW_catchrate %>% 
-  group_by(YEAR) %>% 
-  summarize(total_lengths = length(FLEN)) 
-
-springVsW_totalcatch <- ggplot(spring4VsW_totalcatch, aes(YEAR, total_lengths)) +
-  geom_point(color = 'blue') +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
-  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
-  theme_classic () +
-  ggtitle("Spring 4VsW total")
-
-grid.arrange(G,H,I, P, E, D, spring_immature, catches, springVsW_totalcatch, nrow=3, ncol = 3)
+ggplot(total, aes(x=YEAR, y=abundance, shape=maturity))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  geom_point(data=totalm, aes(y=rollmean(abundance, 2, na.pad = T)),
+             size=2, color="#00D712")+
+  geom_line(data=totalm, aes(y=rollmean(abundance, 2, na.pad = T)),
+            color = "#00D712", size=1)+
+    geom_point(data=totali, aes(y=rollmean(abundance, 2, na.pad = T)),
+             size=2, color="blue")+
+  geom_line(data=totali, aes(y=rollmean(abundance, 2, na.pad = T)),
+            color = "blue", size=1)+
+  theme_classic()+
+  guides(shape = guide_legend(override.aes = list(color = c("blue", "#00D712"))))+
+  scale_y_continuous(labels=scales::comma)+
+  labs(x = "Year", y = "Number at Length")
 ```
   
-  
+```{r, fig.cap="Stratified biomass of Atlantic wolffish in the Summer RV Survey, 1970-2021, with five-year running mean (blue).", fig.align='center'}
+strat <- summer_null %>% 
+  filter(STRAT %in%(440:495)) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(numsets = length(unique(SETNO)))
 
-### Length Frequency Distributions of Wolffish in RV Surveys
-```{r, fig.cap="Length Frequency distributions of wolffish for RV surveys", fig.align='center'}
+catch <- summer %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(weight = sum(TOTWGT/standard_dist),
+            wolfsets = length(unique(SETNO)))
+
+area <- summer_null %>% 
+  filter(STRAT %in%(440:495)) %>% 
+  group_by(STRAT) %>% 
+  distinct(AREA.GSSTRATUM) %>% 
+  mutate(swept = AREA.GSSTRATUM/0.0118006)
+
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(catch, by=c('YEAR', 'STRAT')) %>% 
+  mutate(biomass = (weight/numsets)*swept) %>% 
+  mutate(occurance = (wolfsets/numsets)*100) %>% 
+  mutate(area_occupied = (wolfsets/numsets)*AREA.GSSTRATUM) %>% 
+  replace(is.na(.), 0)
+
+total <- summary_strat%>% 
+  group_by(YEAR) %>% 
+  summarise(biomass = sum(biomass)*0.001,
+            total_area = sum(AREA.GSSTRATUM),
+            area_occupied = sum(area_occupied),
+            percent_area = (area_occupied/total_area)*100,
+            occurance = mean(occurance))
+
+ggplot(total, aes(x=YEAR, y=biomass))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  #geom_smooth(method = "loess", se = F)+
+  geom_point(aes(y=rollmean(biomass, 5, na.pad = T)),
+             col="blue", size=2)+
+  geom_line(aes(y=rollmean(biomass, 5, na.pad = T)),
+            col="blue")+
+  theme_classic()+
+  labs(x = "Year", y = "Biomass (tonnes)")
+```
+
+```{r, fig.cap="Stratified abundance of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the Summer RV Survey, 1970-2021, with five-year running means.", fig.align='center'}
+abun <- summer_lengths %>% 
+  mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT, maturity) %>% 
+  summarize(count = sum(length(FLEN)/standard_dist))
+
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(abun, by=c('YEAR', 'STRAT')) %>% 
+  mutate(count = ifelse(is.na(count), 0, count)) %>% 
+  mutate(abundance = (count/numsets)*swept) 
+
+total <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na()
+
+totalm <- total %>% filter(maturity=="mature")
+totali <- total %>% filter(maturity=="immature")
+
+ggplot(total, aes(x=YEAR, y=abundance, shape=maturity))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  # geom_smooth(method = "loess", se = F)+
+  geom_point(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+             size=2, color="#00D712")+
+  geom_line(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+            color = "#00D712", size=1)+
+    geom_point(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+             size=2, color="blue")+
+  geom_line(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+            color = "blue", size=1)+
+  theme_classic()+
+  guides(shape = guide_legend(override.aes = list(color = c("blue", "#00D712"))))+
+  scale_y_continuous(labels=scales::comma)+
+  labs(x = "Year", y = "Number at Length")
+```
+
+```{r, fig.cap="Stratified biomass of Atlantic wolffish in the Georges Bank RV Survey, 1987-2021, with five-year running mean (blue).", fig.align='center'}
+strat <- georges_null %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(numsets = length(unique(SETNO)))
+
+catch <- georges %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(weight = sum(TOTWGT/standard_dist),
+            wolfsets = length(unique(SETNO)))
+
+area <- georges_null %>% 
+  group_by(STRAT) %>% 
+  distinct(AREA.GSSTRATUM) %>% 
+  mutate(swept = AREA.GSSTRATUM/0.0118006)
+
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(catch, by=c('YEAR', 'STRAT')) %>% 
+  mutate(biomass = (weight/numsets)*swept) %>% 
+  mutate(occurance = (wolfsets/numsets)*100) %>% 
+  mutate(area_occupied = (wolfsets/numsets)*AREA.GSSTRATUM) %>% 
+  replace(is.na(.), 0)
+
+total <- summary_strat%>% 
+  group_by(YEAR) %>% 
+  summarise(biomass = sum(biomass)*0.001,
+            total_area = sum(AREA.GSSTRATUM),
+            area_occupied = sum(area_occupied),
+            percent_area = (area_occupied/total_area)*100,
+            occurance = mean(occurance))
+
+ggplot(total, aes(x=YEAR, y=biomass))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  #geom_smooth(method = "loess", se = F)+
+  geom_point(aes(y=rollmean(biomass, 5, na.pad = T)),
+             col="blue", size=2)+
+  geom_line(aes(y=rollmean(biomass, 5, na.pad = T)),
+            col="blue")+
+  theme_classic()+
+  labs(x = "Year", y = "Biomass (tonnes)")
+```
+
+```{r, fig.cap="Stratified abundance of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the Georges Bank RV Survey, 1987-2021, with five-year running means.", fig.align='center'}
+abun <- georges_lengths %>% 
+  mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT, maturity) %>% 
+  summarize(count = sum(length(FLEN)/standard_dist))
+
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(abun, by=c('YEAR', 'STRAT')) %>% 
+  mutate(count = ifelse(is.na(count), 0, count)) %>% 
+  mutate(abundance = (count/numsets)*swept) 
+
+total <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na()
+
+totalm <- total %>% filter(maturity=="mature")
+totali <- total %>% filter(maturity=="immature")
+
+ggplot(total, aes(x=YEAR, y=abundance, shape=maturity))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  # geom_smooth(method = "loess", se = F)+
+  geom_point(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+             size=2, color="#00D712")+
+  geom_line(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+            color = "#00D712", size=1)+
+    geom_point(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+             size=2, color="blue")+
+  geom_line(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+            color = "blue", size=1)+
+  theme_classic()+
+  guides(shape = guide_legend(override.aes = list(color = c("blue", "#00D712"))))+
+  scale_y_continuous(labels=scales::comma)+
+  labs(x = "Year", y = "Number at Length")
+```
+
+
+### Length Frequency and Catch Rate
+```{r, fig.cap="Length Frequency distributions of wolffish from RV surveys", fig.align='center'}
 #SPRING 4VSW
 j <- spring4VsW_lengths %>% 
   ggplot(aes(FLEN))+
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15)) +
-  ggtitle("SPRING 4VsW")
+  ggtitle("SPRING 4VsW")+
+  theme(plot.title = element_text(size = 12))
 
 #SPRING 4X
 k<- spring4x_lengths %>% 
@@ -448,9 +1096,8 @@ k<- spring4x_lengths %>%
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15)) +
-  ggtitle("SPRING 4X")
+  ggtitle("SPRING 4X")+
+  theme(plot.title = element_text(size = 12))
 
 #SPRING
 l <- spring_lengths %>% 
@@ -458,9 +1105,8 @@ l <- spring_lengths %>%
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15)) +
-  ggtitle("SPRING")
+  ggtitle("SPRING")+
+  theme(plot.title = element_text(size = 12))
 
 #GEORGES 
 m <- georges_lengths %>% 
@@ -468,9 +1114,8 @@ m <- georges_lengths %>%
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15)) +
-  ggtitle("GEORGES BANK (5Z)")
+  ggtitle("GEORGES BANK (5Z)")+
+  theme(plot.title = element_text(size = 12))
 
 #FALL
 n <- fall_lengths %>% 
@@ -478,10 +1123,8 @@ n <- fall_lengths %>%
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15)) +
-  ggtitle("FALL")
-
+  ggtitle("FALL")+
+  theme(plot.title = element_text(size = 12))
 
 #SUMMER 
 o <- summer_lengths %>% 
@@ -489,9 +1132,8 @@ o <- summer_lengths %>%
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15)) +
-  ggtitle("SUMMER")
+  ggtitle("SUMMER")+
+  theme(plot.title = element_text(size = 12))
 
 #REDFISH 
 p <- redfish_lengths %>% 
@@ -499,159 +1141,202 @@ p <- redfish_lengths %>%
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
   theme_classic()+
-  theme(text = element_text(size=15),
-        axis.text = element_text(size=15)) +
-  ggtitle("REDFISH")
+  ggtitle("REDFISH")+
+  theme(plot.title = element_text(size = 12))
 
- grid.arrange(j,k,l,m,n,o,p, nrow = 2)
+gridExtra::grid.arrange(j,k,l,m,n,o,p, nrow = 2)
 ```
   
+```{r, fig.cap="Log Transformed catch rate (total number at length) for  RV survey", fig.align='center'}
+#Spring_4x
+strat <- spring4X_null %>% 
+  filter(YEAR > 2008) %>% 
+  filter(STRAT %in%(440:495)) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(numsets = length(unique(SETNO)))
 
-### Wolffish Biomass in RV Surveys
-```{r, fig.cap="Total biomass (black), mature biomass (red), and immature biomass (blue) of Atlantic Wolffish for the DFO George's Bank RV Survey", fig.align='center'}
-biomass <- georges %>% 
+area <- spring4X_null %>% 
+  filter(STRAT %in%(440:495)) %>% 
+  group_by(STRAT) %>% 
+  distinct(AREA.GSSTRATUM) %>% 
+  mutate(swept = AREA.GSSTRATUM/0.0118006)
+
+abun <- spring4x_lengths %>% 
+  mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT, maturity) %>% 
+  summarize(count = sum(length(FLEN)/standard_dist))
+
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(abun, by=c('YEAR', 'STRAT')) %>% 
+  mutate(count = ifelse(is.na(count), 0, count)) %>% 
+  mutate(abundance = (count/numsets)*swept) 
+
+total_mat <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na() %>% 
+  filter(maturity=="mature")
+
+total_immat <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na() %>% 
+  filter(maturity=="immature")
+
+total <- summary_strat%>% 
   group_by(YEAR) %>% 
-  summarise(sum = sum(TOTWGT))
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na()
 
-biomass_mat <- georges_lengths %>% 
-  filter(FLEN > 53) %>% 
-  group_by(YEAR, MISSION) %>% 
-  select(YEAR, MISSION, SETNO, TOTWGT) %>% 
-  unique() %>% 
+
+a <- ggplot(total_immat, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Spring 4X immature")
+
+
+b <- ggplot(total_mat, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Spring 4X mature")
+
+c <- ggplot(total, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Spring 4X total")
+
+
+#Summer
+strat <- summer_null %>% 
+  filter(STRAT %in%(440:495)) %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(numsets = length(unique(SETNO)))
+
+area <- summer_null %>% 
+  filter(STRAT %in%(440:495)) %>% 
+  group_by(STRAT) %>% 
+  distinct(AREA.GSSTRATUM) %>% 
+  mutate(swept = AREA.GSSTRATUM/0.0118006)
+
+abun <- summer_lengths %>% 
+  mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT, maturity) %>% 
+  summarize(count = sum(length(FLEN)/standard_dist))
+
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(abun, by=c('YEAR', 'STRAT')) %>% 
+  mutate(count = ifelse(is.na(count), 0, count)) %>% 
+  mutate(abundance = (count/numsets)*swept) 
+
+total_mat <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na() %>% 
+  filter(maturity=="mature")
+
+total_immat <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na() %>% 
+  filter(maturity=="immature")
+
+total <- summary_strat%>% 
   group_by(YEAR) %>% 
-  summarise(sum=sum(TOTWGT))
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na()
 
-biomass_juv <- georges_lengths %>% 
-  filter(FLEN < 54) %>% 
-  group_by(YEAR, MISSION) %>% 
-  select(YEAR, MISSION, SETNO, TOTWGT) %>% 
-  unique() %>% 
+
+d <- ggplot(total_immat, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Summer immature")
+
+
+e <- ggplot(total_mat, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Summer mature")
+
+f <- ggplot(total, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Summer total")
+
+
+#George's
+strat <- georges_null %>% 
+  group_by(YEAR, STRAT) %>% 
+  summarize(numsets = length(unique(SETNO)))
+
+area <- georges_null %>% 
+  group_by(STRAT) %>% 
+  distinct(AREA.GSSTRATUM) %>% 
+  mutate(swept = AREA.GSSTRATUM/0.0118006)
+
+abun <- georges_lengths %>% 
+  mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
+  mutate(standard_dist = DIST/1.75) %>% 
+  group_by(YEAR, STRAT, maturity) %>% 
+  summarize(count = sum(length(FLEN)/standard_dist))
+
+summary_strat <- strat %>% left_join(area, by="STRAT") %>% 
+  left_join(abun, by=c('YEAR', 'STRAT')) %>% 
+  mutate(count = ifelse(is.na(count), 0, count)) %>% 
+  mutate(abundance = (count/numsets)*swept) 
+
+total_mat <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na() %>% 
+  filter(maturity=="mature")
+
+total_immat <- summary_strat%>% 
+  group_by(YEAR, maturity) %>% 
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na() %>% 
+  filter(maturity=="immature")
+
+total <- summary_strat%>% 
   group_by(YEAR) %>% 
-  summarise(sum=sum(TOTWGT))
+  summarise(abundance = sum(abundance)) %>% 
+  drop_na()
 
 
-ggplot(biomass, aes(YEAR, sum))+
-  geom_point()+
-  geom_line()+
-  geom_line(data=biomass_mat, aes(YEAR, sum), col="red")+
-  geom_line(data=biomass_juv, aes(YEAR, sum), col="blue")+
-  theme_classic()+
-  labs(title = "Summer RV Survey total biomass",
-       x = 'Year',
-       y = 'Biomass (kg')
+g <- ggplot(total_immat, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Georges immature")
+
+
+h <- ggplot(total_mat, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Georges mature")
+
+i <- ggplot(total, aes (YEAR, log(abundance))) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') +
+  theme_classic() +
+  labs(x="Year", y="Log (count)", title="Geores total")
+
+gridExtra::grid.arrange(a,b,c,d,e,f,g,h,i, nrow=3, ncol = 3)
 ```
-
-```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO 4VsW RV Survey", fig.align='center'}
-biomass <- spring4VsW %>% 
-  group_by(YEAR) %>% 
-  summarise(sum = sum(TOTWGT))
-
-ggplot(biomass, aes(YEAR, sum))+
-  geom_point()+
-  geom_line()+
-  theme_classic()+
-  labs(title = "4VsW RV Survey total biomass",
-       x = 'Year',
-       y = 'Biomass (kg')
-```
-
-```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO 4X RV Survey", fig.align='center'}
-biomass <- spring4X %>% 
-  group_by(YEAR) %>% 
-  summarise(sum = sum(TOTWGT))
-
-ggplot(biomass, aes(YEAR, sum))+
-  geom_point()+
-  geom_line()+
-  theme_classic()+
-  labs(title = "4X RV Survey total biomass",
-       x = 'Year',
-       y = 'Biomass (kg')
-```
-
-```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO Spring RV Survey", fig.align='center'}
-biomass <- spring %>% 
-  group_by(YEAR) %>% 
-  summarise(sum = sum(TOTWGT))
-
-ggplot(biomass, aes(YEAR, sum))+
-  geom_point()+
-  geom_line()+
-  theme_classic()+
-  labs(title = "Spring RV Survey total biomass",
-       x = 'Year',
-       y = 'Biomass (kg')
-```
-
-```{r, fig.cap="Total biomass (black), mature biomass (red), and immature biomass (blue) of Atlantic Wolffish for the DFO Summer RV Survey", fig.align='center'}
-biomass <- summer %>% 
-  group_by(YEAR) %>% 
-  summarise(sum = sum(TOTWGT))
-
-biomass_mat <- summer_lengths %>% 
-  filter(FLEN > 53) %>% 
-  group_by(YEAR, MISSION) %>% 
-  select(YEAR, MISSION, SETNO, TOTWGT) %>% 
-  unique() %>% 
-  group_by(YEAR) %>% 
-  summarise(sum=sum(TOTWGT))
-
-biomass_juv <- summer_lengths %>% 
-  filter(FLEN < 54) %>% 
-  group_by(YEAR, MISSION) %>% 
-  select(YEAR, MISSION, SETNO, TOTWGT) %>% 
-  unique() %>% 
-  group_by(YEAR) %>% 
-  summarise(sum=sum(TOTWGT))
-
-
-ggplot(biomass, aes(YEAR, sum))+
-  geom_point()+
-  geom_line()+
-  geom_line(data=biomass_mat, aes(YEAR, sum), col="red")+
-  geom_line(data=biomass_juv, aes(YEAR, sum), col="blue")+
-  theme_classic()+
-  labs(title = "Summer RV Survey biomass",
-       x = 'Year',
-       y = 'Biomass (kg')
-```
-
-```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO Fall RV Survey", fig.align='center'}
-biomass <- fall %>% 
-  group_by(YEAR) %>% 
-  summarise(sum = sum(TOTWGT))
-
-ggplot(biomass, aes(YEAR, sum))+
-  geom_point()+
-  geom_line()+
-  theme_classic()+
-  labs(title = "Fall RV Survey total biomass",
-       x = 'Year',
-       y = 'Biomass (kg')
-```
-
-```{r, fig.cap="Total biomass of Atlantic Wolffish for the DFO Redfish RV Survey", fig.align='center'}
-biomass <- redfish %>% 
-  group_by(YEAR) %>% 
-  summarise(sum = sum(TOTWGT))
-
-ggplot(biomass, aes(YEAR, sum))+
-  geom_point()+
-  geom_line()+
-  theme_classic()+
-  labs(title = "Redfish RV Survey total biomass",
-       x = 'Year',
-       y = 'Biomass (kg')
-```
-
   
-
 
 
 # Industry Surveys
 ```{r, include = FALSE}
 #import and clean data, this chunk will be hidden
-
 isdb <- read.csv("isdb.csv", header = T) %>%
   select(-X)
 isdb_lengths <- read.csv("isdb_lengths.csv", header = T) %>%
@@ -672,7 +1357,7 @@ halibut_fixed <- halibut_longline %>%
   filter(SETCD_ID == 4)
 
 
-#4VSW Setinel Survey
+#4VSW Sentinel Survey
 sentinel <- isdb %>% filter(TRIPCD_ID == 7050)
 unique(sentinel$SET_TYPE)
 
@@ -699,6 +1384,10 @@ ITQ <- ITQ %>%
 #LOBSTER
 lobster <- isdb %>% filter(TRIPCD_ID == 7065)
 unique(lobster$SET_TYPE)
+
+
+#combine
+lobQ <- rbind(ITQ, lobster)
 
 
 #SNOWCRAB
@@ -765,6 +1454,9 @@ lobster_null %>%
 lobster_null <- lobster_null %>% 
   filter(SETCD_ID == 4)
 
+#combine
+lobQ_null <- rbind(ITQ_null, lobster_null)
+
 
 #SNOWCRAB
 snowcrab_null <- isdb_null %>% filter(TRIPCD_ID == 7061)
@@ -779,13 +1471,151 @@ snowcrab_null <- snowcrab_null %>%
 ```
 
 
-
 ### Distribution of Wolffish in Industry Surveys
-```{r}
-#MAPS
-```
-  
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Halibut Longline Survey, 1998-2021, summed by 10 minute aggregation.", fig.align='center', fig.height = 3}
+null <- halibut_longline_null %>%  select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+  filter(SPECCD_ID != 50) %>% 
+  filter(grepl("^4|^5", NAFAREA_ID ))
+wolf <-halibut_longline_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+    filter(EST_COMBINED_WT > 0) %>% 
+  filter(SPECCD_ID == 50) %>% 
+  filter(grepl("^4|^5", NAFAREA_ID ))
 
+null <- Mar.utils::aggregator(null, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 10) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 10) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -56),
+    ylim = c(41, 47.8))+
+  geom_point(data=null, aes(x=long, y=lat), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=long, y=lat, size=EST_COMBINED_WT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the 4VSW Sentinel Survey, 1996-2020, summed by 10 minute aggregation.", fig.align='center', fig.height = 3}
+null <- sentinel_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+  filter(SPECCD_ID != 50) %>% 
+  filter(grepl("^4|^5", NAFAREA_ID ))
+wolf <-sentinel_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+    filter(EST_COMBINED_WT > 0) %>% 
+  filter(SPECCD_ID == 50) %>% 
+  filter(grepl("^4|^5", NAFAREA_ID ))
+
+null <- Mar.utils::aggregator(null, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 10) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 10) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-64.5, -57),
+    ylim = c(42.5, 46))+
+  geom_point(data=null, aes(x=long, y=lat), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=long, y=lat, size=EST_COMBINED_WT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Lobster/ITQ Survey, 1995-2021, summed by 5 minute aggregation.", fig.align='center', fig.height = 3}
+null <- lobQ_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+  filter(SPECCD_ID != 50)
+wolf <-lobQ_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+    filter(EST_COMBINED_WT > 0) %>% 
+  filter(SPECCD_ID == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-68, -63),
+    ylim = c(41.7, 46))+
+  geom_point(data=null, aes(x=long, y=lat), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=long, y=lat, size=EST_COMBINED_WT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Snowcrab Ecosystem Survey, 2004-2021, summed by 5 minute aggregation.", fig.align='center', fig.height = 3}
+snow_eco_null <- read.csv("snow_eco_null.csv", header = T) %>%
+  select(-X)
+
+null <- snow_eco_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+  filter(SPECCD_ID != 50)
+wolf <- snow_eco_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+  filter(EST_COMBINED_WT > 0) %>% 
+  filter(SPECCD_ID == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-61, -58),
+    ylim = c(43, 47))+
+  geom_point(data=null, aes(x=long, y=lat), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=long, y=lat, size=EST_COMBINED_WT_SUM), alpha = 1)+
+  scale_size(breaks = c(1,2,3))+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
+```{r, fig.cap="Distribution of Atlantic wolffish catches in the Snowcrab Fixed Survey, 2004-2021, summed by 5 minute aggregation.", fig.align='center', fig.height = 3}
+null <- snowcrab_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+  filter(SPECCD_ID != 50)
+wolf <-snowcrab_null %>% select(lat, long, SPECCD_ID, EST_COMBINED_WT, NAFAREA_ID) %>% 
+    filter(EST_COMBINED_WT > 0) %>% 
+  filter(SPECCD_ID == 50)
+
+null <- Mar.utils::aggregator(null, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 5) 
+wolf <- Mar.utils::aggregator(wolf, lat.field = "lat", lon.field = "long", agg.fields = "EST_COMBINED_WT", agg.minutes = 5) 
+
+ggplot(bathy, aes(x=x, y=y))+
+  geom_raster(aes(fill=z)) +
+  scale_fill_etopo() +
+  geom_contour(aes(z=z),
+               breaks=c(0, -200, -400, -800, -1200, -1600, -2000, -2400, -2800, -3200), colour="gray57", size=0.2)+
+  geom_polygon(data=FortNAFO,
+               aes(long, lat, group = group),lwd=0.5,fill=NA,col="black")+
+  coord_cartesian(
+    xlim = c(-66, -56.5),
+    ylim = c(42.7, 47.3))+
+  geom_point(data=null, aes(x=long, y=lat), shape=3, alpha = 0.7, size=0.6)+
+  geom_point(data=wolf, aes(x=long, y=lat, size=EST_COMBINED_WT_SUM), alpha = 1)+
+  theme_classic()+
+  guides(fill = FALSE)+
+  labs(size = "Catch (kg/tow)", x = "Latitude", y = "Longitude")
+```
+
+    
 ### Abundance of Wolffish in Industry Surveys
 ```{r, include=FALSE}
 #setup data for summaries - this chunk will be hidden
@@ -821,7 +1651,6 @@ isdb_summary <- left_join(isdb_summary, isdb_null_summary, by=c("TRIP_TYPE", "YE
 
 ```
 
-
 ```{r, fig.cap="Percent occurance of wolffish in survey sets", fig.align='center'}
 ggplot(isdb_summary, aes(YEAR, occurance, colour=TRIP_TYPE))+
   geom_line()+
@@ -830,33 +1659,28 @@ ggplot(isdb_summary, aes(YEAR, occurance, colour=TRIP_TYPE))+
 
 ```
   
-
-```{r, fig.cap="", fig.align='center'}
-#here you will add code for the abundance graphs of mature/immature
-```
-  
-
-
-```{r, fig.cap="", fig.align='center'}
-#here you will add code for the log transformed catch plots
-```
-  
-  
-
-### Length Frequency Distributions of Wolffish in Industry Surveys
-```{r, fig.cap="", fig.align='center'}
-#here you will add code for the histograms
-```
   
 
 ### Wolffish Biomass in Industry Surveys
-```{r, fig.cap="Catch per Unit Effort of Wolffish in the Halibut Longline Survey", fig.align='center'}
+```{r, fig.cap="Length Frequency distributions of Atlantic wolffish in the Snowcrab Environmental Survey", fig.align='center'}
+isdb_lengths %>% 
+  filter(TRIPCD_ID == 7061) %>% 
+  filter(SETCD_ID == 11) %>% 
+  ggplot(aes(FISH_LENGTH))+
+  geom_histogram(binwidth = 2, col="black", fill="black", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  ggtitle("Snowcrab Ecosystem Survey")+
+  theme(plot.title = element_text(size = 12))
+```
+
+```{r, fig.cap="Catch per Unit Effort of Atlantic wolffish in the Halibut Longline Survey", fig.align='center'}
 cpue <- halibut_longline %>% 
+  #filter(HOOKCD_ID == 141) %>% 
   select(YEAR, EST_COMBINED_WT, NUM_HOOK_HAUL) %>% 
   mutate(sum = (EST_COMBINED_WT/NUM_HOOK_HAUL)*1000) %>% 
   group_by(YEAR) %>%   
   summarise(CPUE = mean(sum))
-  
   
 ggplot(cpue, aes(YEAR, CPUE))+
   geom_point()+
@@ -864,11 +1688,10 @@ ggplot(cpue, aes(YEAR, CPUE))+
   theme_classic()+
   labs(title = "Halibut Longline Survey CPUE",
        x = 'Year',
-       y = 'CPUE (kg/1000 hooks)')
+       y = 'Mean Catch (kg) per 1000 hooks')
 ```
   
-
-```{r, fig.cap="Catch per Unit Effort of Wolffish in the Sentinel Longline Survey", fig.align='center'}
+```{r, fig.cap="Catch per Unit Effort of Atlantic wolffish in the 4VSW Sentinel Longline Survey", fig.align='center'}
 pue <- sentinel %>% 
   select(YEAR, EST_COMBINED_WT, NUM_HOOK_HAUL) %>% 
   mutate(sum = (EST_COMBINED_WT/NUM_HOOK_HAUL)*1000) %>% 
@@ -884,9 +1707,8 @@ ggplot(cpue, aes(YEAR, CPUE))+
        x = 'Year',
        y = 'CPUE (kg/1000 hooks)')
 ```
-  
 
-```{r, fig.cap="Catch per Trap of Wolffish in the ITQ/Lobster Survey", fig.align='center'}
+```{r, fig.cap="Catch per tow of Atlantic wolffish in the ITQ/Lobster Survey", fig.align='center'}
 a <- ITQ %>%  select(YEAR, EST_COMBINED_WT) %>% 
   mutate(survey="ITQ")
 
@@ -901,9 +1723,10 @@ ggplot(cpue, aes(YEAR, CPUE))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(title = "ITQ/Lobster Surveys Uncorrected CPUE",
+  geom_vline(xintercept = 2012, col="blue", linetype="dashed")+
+  labs(title = "ITQ/Lobster Surveys Uncorrected Catch per tow",
        x = 'Year',
-       y = 'CPUE (kg/trap haul)')
+       y = 'Catch (kg/tow)')
 ```
   
 
