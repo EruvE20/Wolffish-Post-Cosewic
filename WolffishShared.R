@@ -1,11 +1,9 @@
-library(dplyr)
+install.packages("Mar.datawrangling")
 library(ggplot2)
 library(tidyverse)
 library(gridExtra)
 library(scales)
-install.packages("gridExtra")
-install.packages("rmarkdown")
-install.packages("scales")
+library('Mar.datawrangling')
 
 ##Wolffish Shared Project File
 
@@ -814,6 +812,10 @@ flatfish <- isdb %>% filter(TRIPCD_ID == 49)
 shrimp <- isdb %>% filter(TRIPCD_ID == 2210)
 silverhake <- isdb %>% filter(TRIPCD_ID == 14)
 
+sentinel_4VN <- isdb %>% filter(TRIPCD_ID == 7052) %>%
+  select (GEARCD_ID, GEAR, SET_TYPE, YEAR) %>%
+  filter(YEAR == 2000)
+
 
 #Halibut Industry Longline Survey
 halibut_longline <- isdb %>% filter(TRIPCD_ID == 7057)
@@ -1348,6 +1350,7 @@ plot(yrcatch_halibut_longline)
 
 # landings for ISDB -----
 
+setwd("C:/Users/SILVERK/Documents/Wolffish-documents/Wolffish-Post-Cosewic")
 
 #cbp2 <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
           #"#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -1388,29 +1391,21 @@ landings_commericalsurveys <- read.csv("isdb.csv", header = T) %>%
   summarize(total_wt = sum(EST_KEPT_WT), 
             triptype = factor (TRIP_TYPE))
 
-landings %>%
-  ggplot(aes(x=YEAR, y=total_wt, fill=triptype)) + 
+l_industrial <- landings_industrial %>%
+  ggplot(aes(x=YEAR, y= log(total_wt), fill=triptype)) + 
   geom_bar( stat="identity") +
-  scale_y_continuous(trans = 'log10', labels = function(x) format(x, scientific = FALSE)) +
   theme_classic() 
 
-grid.arrange()
+l_commerical <- landings_commericalsurveys %>%
+  ggplot(aes(x=YEAR, y= log(total_wt), fill=triptype)) + 
+  geom_bar( stat="identity") +
+  theme_classic()  
+
+grid.arrange(l_industrial, l_commerical)
 
   
 str(landings)
 
-#landings %>%
-  ggplot(aes(x=YEAR, y=total_wt, color = triptype))+
-  geom_point() +
-  geom_line()+
-  theme_classic()
-
-#landings %>%
-  ggplot(aes(x=YEAR, y=total_wt))+
-  geom_point() +
-  geom_line()+
-  theme_classic() +
-  facet_wrap(~triptype)
 
  
   

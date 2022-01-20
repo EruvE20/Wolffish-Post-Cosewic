@@ -2,12 +2,13 @@
 title: "Summary tables"
 output: html_document
 ---
-
-```{r, fig.cap = "Summary of Snow Crab for fixed Surveys and Ecosystem Surveys", echo = FALSE, message =FALSE}
-library(dplyr)
-library(ggplot2)
+```{r, echo = FALSE, message =FALSE}
+library(tidyverse)
 library(kableExtra)
 isdb_lengths <- read.csv('isdb_lengths.csv')
+isdb_null <- read.csv("isdb_null.csv") 
+isdb <- read.csv("isdb.csv") 
+
 snowcrab_sum_fixed <- isdb_lengths %>% 
   filter(TRIPCD_ID ==7061) %>%
   filter(YEAR != 2004) %>%
@@ -52,9 +53,9 @@ snowcrab_sum_ecosystem %>%
   kbl(caption = "Table 2 Summary of Snow Crab Ecosystem Survey", col.names = c(
                                                 "Year", 
                                                 "Total weight caught(g)",
-                                               "Mean of total weight caught(g)", 
+                                               "Mean total weight caught(g)", 
                                                "Total number caught", 
-                                               "Mean of total number caught", 
+                                               "Mean total number caught", 
                                                "Mean length of Wolffish", 
                                                "Max Length of Wolffish")) %>%
   kable_classic(full_width = T) 
@@ -86,10 +87,16 @@ library(kableExtra)
 isdb_lengths <- read.csv('isdb_lengths.csv')
 
 
+
+```
+
+```{r, echo = FALSE, message=FALSE}
 ITQ_summary <- isdb_lengths %>% 
   filter(TRIPCD_ID ==7051) %>%
   filter(SETCD_ID == 4) %>%
   select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  mutate(EST_COMBINED_WT = ifelse(is.na(EST_COMBINED_WT), 0, EST_COMBINED_WT),
+         EST_NUM_CAUGHT = ifelse(is.na(EST_NUM_CAUGHT), 0, EST_NUM_CAUGHT)) %>% 
   group_by(YEAR) %>% 
   summarize(
     sum_wt = sum(EST_COMBINED_WT * 1000),
@@ -123,10 +130,8 @@ ITQ_summary <- isdb_lengths %>%
       sum_catch = sum(EST_COMBINED_WT * 1000), 
       total_sets = length(unique(SET_NO))) %>%
       mutate(across(c(sum_catch), round, 2))
- 
-isdb_null <- read.csv("isdb_null.csv") 
-isdb <- read.csv("isdb.csv") 
 
+ 
 ITQ_null <- isdb_null %>% filter(TRIPCD_ID == 7051) %>%
  filter(SETCD_ID == 4)
 
@@ -165,16 +170,13 @@ ITQ_summary <- left_join(ITQ_N, ITQ_SETS, by="STRATUM_ID") %>%
  
 ```
 
-```
-```
-```{r, fig.cap = "Summary for the 4VsW Sentinel Survey", echo = FALSE, message=FALSE}
-
-isdb <- read.csv("isdb.csv")
-
+```{r, echo = FALSE, message=FALSE}
 sentinel_summaries <- isdb %>% 
   filter(TRIPCD_ID == 7050) %>%
   filter(SETCD_ID == 5) %>%
   select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  mutate(EST_COMBINED_WT = ifelse(is.na(EST_COMBINED_WT), 0, EST_COMBINED_WT),
+         EST_NUM_CAUGHT = ifelse(is.na(EST_NUM_CAUGHT), 0, EST_NUM_CAUGHT)) %>% 
   group_by(YEAR) %>% 
   summarize(
     sum_wt = sum(EST_COMBINED_WT * 1000),
@@ -205,9 +207,11 @@ sentinel_SETS <- sentinel %>%
   filter(!is.na(STRATUM_ID)) %>%
   group_by(STRATUM_ID) %>% 
   summarise(set = length(unique(SET_NO)),
-  sum_catch = sum(EST_COMBINED_WT * 1000))
+            sum_catch = sum(EST_COMBINED_WT * 1000))
 
 sentinel_summary <- left_join(sentinel_N,sentinel_SETS, by="STRATUM_ID") %>% 
+    mutate(set = ifelse(is.na(set), 0, set),
+         sum_catch = ifelse(is.na(sum_catch), 0, sum_catch)) %>% 
   mutate(occurance = 100*(set/nullset))
 
 
@@ -222,10 +226,86 @@ sentinel_summary %>%
 
 ```
 
+```{r, echo = FALSE, message=FALSE}
+test <- isdb %>% filter(TRIPCD_ID == 7057)
 
-```{r, fig.cap = "Summary for Shrimp Survey based on NAFO AREA", echo = FALSE, message=FALSE}
+test %>% 
+  group_by(SET_TYPE) %>% 
+  summarize(trips = length(unique(FISHSET_ID))) %>%
+  kbl(caption = "Table 7 Summary of Halibut Longline Survey Set Types", col.names = c(
+                                                "Set Type", 
+                                                "Trips")) %>%
+  kable_classic(full_width = T)
 
-isdb <- read.csv("isdb.csv")
+test %>% 
+  filter(SETCD_ID %in%c(4,10)) %>% 
+  group_by(SET_TYPE, HOOKCD_ID) %>% 
+  summarize(trips = length(unique(FISHSET_ID)))%>% drop_na(HOOKCD_ID)%>%
+  kbl(caption = "Table 8 Summary for the Halibut Longline Survey Gear", col.names = c(
+                                                "Set Type", 
+                                                "Hook ID",
+                                               "Trips" )) %>%
+  kable_classic(full_width = T)
+
+
+
+halibut_summaries <- isdb %>% 
+  filter(TRIPCD_ID == 7057) %>%
+  filter(SETCD_ID == 4) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR)%>%
+  mutate(EST_COMBINED_WT = ifelse(is.na(EST_COMBINED_WT), 0, EST_COMBINED_WT),
+         EST_NUM_CAUGHT = ifelse(is.na(EST_NUM_CAUGHT), 0, EST_NUM_CAUGHT)) %>%
+  group_by(YEAR) %>% 
+  summarize(
+    sum_wt = sum(EST_COMBINED_WT * 1000),
+    mean_weight = mean(EST_COMBINED_WT * 1000),
+    count_caught = length(EST_NUM_CAUGHT), 
+    mean_caught = mean(EST_NUM_CAUGHT))
+
+halibut_summaries %>%
+  kbl(caption = "Table 9 Summary for the Halibut Longline Fixed Survey", col.names = c(
+                                                "YEAR", 
+                                                "Total weight of catch (g)",
+                                               "Mean weight of catch (g)", 
+                                               "Total number caught", 
+                                               "Mean of total number caught" )) %>%
+  kable_classic(full_width = T)
+
+halibut_null <- isdb_null %>% filter(TRIPCD_ID == 7057)
+hali <- isdb %>% filter(TRIPCD_ID == 7057)
+
+halibut_N <- halibut_null %>%
+  select(STRATUM_ID, SET_NO) %>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(nullset = length(unique(SET_NO)))
+
+halibut_SETS <- hali %>% 
+  select(STRATUM_ID, SET_NO, EST_COMBINED_WT)%>%
+  filter(!is.na(STRATUM_ID)) %>%
+  group_by(STRATUM_ID) %>% 
+  summarise(set = length(unique(SET_NO)),
+  sum_catch = sum(EST_COMBINED_WT * 1000))
+
+halibut_summary <- left_join(halibut_N, halibut_SETS, by="STRATUM_ID") %>% 
+    mutate(set = ifelse(is.na(set), 0, set),
+         sum_catch = ifelse(is.na(sum_catch), 0, sum_catch)) %>% 
+  mutate(occurance = 100*(set/nullset))
+
+
+halibut_summary %>%
+  kbl(caption = "Table 10 Proportion of Wolfish sets per stratum for Halibut Longline Fixed Survey", col.names = c(
+                                                "Stratum", 
+                                                "Null sets",
+                                               "Sets with wolffish caught", 
+                                               "Total weight of catch(g)", 
+                                               "Proportion of Wolffish caught" )) %>%
+  kable_classic(full_width = T)
+
+```
+
+```{r, echo = FALSE, message=FALSE}
+
 shrimp_summary <- isdb %>% 
   filter(TRIPCD_ID ==2210) %>%
   filter(SETCD_ID == 1) %>%
@@ -243,15 +323,14 @@ shrimp_summary <- isdb %>%
     
    
 shrimp_summary %>%
-  kbl(caption = "Table 7 Total sets and Estimated combined weight for wolffish based on NAFO areas for Shrimp Survey - OTB GEAR", col.names = c(
+  kbl(caption = "Table 11 Total sets and Estimated combined weight for wolffish based on NAFO areas for Shrimp Survey - OTB GEAR", col.names = c(
                                                 "NAFO area", 
                                                 "Number of sets with wolffish caught",
                                                "Total caught weight (g)")) %>%
   kable_classic(full_width = T)
 ```
 
-
-```{r,fig.cap = "Summary for 4VN Sentinel Survey", echo = FALSE, message=FALSE}
+```{r, echo = FALSE, message=FALSE}
 
 sentinel_4VN_null_summary <- isdb_null %>%
   filter(TRIPCD_ID == 7052) %>%
@@ -266,6 +345,8 @@ Sentinel_4VN_summary <- isdb_lengths %>%
   filter(SETCD_ID == 4) %>%
   select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
   filter(!YEAR %in% c("1994", "1995")) %>%
+  mutate(EST_COMBINED_WT = ifelse(is.na(EST_COMBINED_WT), 0, EST_COMBINED_WT),
+         EST_NUM_CAUGHT = ifelse(is.na(EST_NUM_CAUGHT), 0, EST_NUM_CAUGHT)) %>%
   group_by(YEAR) %>% 
   summarize(
     sets = length(unique(SET_NO)),
@@ -278,7 +359,7 @@ Sentinel_4VN_summary <- isdb_lengths %>%
 sentinel_total_summary <- left_join(sentinel_4VN_null_summary, Sentinel_4VN_summary,  by="YEAR")
 
 sentinel_total_summary %>%
-  kbl(caption = "Table 8 Summary for the 4VN Sentinel Fixed Survey", col.names = c(
+  kbl(caption = "Table 12 Summary for the 4VN Sentinel Fixed Survey", col.names = c(
                                                 "Year", 
                                                 "Null sets", 
                                                 "Sets that caught wolffish",
@@ -299,11 +380,13 @@ Sentinel_4VN_summary_SETID_5 <- isdb_lengths %>%
   filter(TRIPCD_ID == 7052) %>%
   filter(SETCD_ID == 5) %>%
   select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,SET_NO)%>%
+  mutate(EST_COMBINED_WT = ifelse(is.na(EST_COMBINED_WT), 0, EST_COMBINED_WT),
+         EST_NUM_CAUGHT = ifelse(is.na(EST_NUM_CAUGHT), 0, EST_NUM_CAUGHT)) %>%
   group_by(YEAR) %>% 
   summarize(
     sets = length(unique(SET_NO)),
-    sum_wt = sum(EST_COMBINED_WT),
-    mean_weight = mean(EST_COMBINED_WT),
+    sum_wt = sum(EST_COMBINED_WT * 1000),
+    mean_weight = mean(EST_COMBINED_WT * 1000),
     count_caught = length(EST_NUM_CAUGHT), 
     mean_caught = mean(EST_NUM_CAUGHT))
 
@@ -311,7 +394,7 @@ sentinel_total_summary_SETID5 <- left_join(sentinel_4VN_null_summary_SETID5, Sen
 
 
 sentinel_total_summary_SETID5 %>%
-  kbl(caption = "Table 9 Summary for the 4VN Sentinel Random Survey", col.names = c(
+  kbl(caption = "Table 13 Summary for the 4VN Sentinel Random Survey", col.names = c(
                                                 "Year", 
                                                 "Null sets", 
                                                 "Sets that caught wolffish",
@@ -326,18 +409,19 @@ sentinel_total_summary_SETID5 %>%
 
 ```
 
-```{r, fig.cap = "Summary for Summer RV Survey", echo = FALSE, message=FALSE}
+```{r, echo = FALSE, message=FALSE}
+library(dplyr)
 summer_length <- read.csv("summer_lengths.csv", header = T) %>% 
   filter(TYPE == 1) %>% 
   select(-X) %>%
   select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN) %>%
-  filter(!STRAT %in% c("434", "436", "437", "439", "483", "496", "497","501", "502", "503", "504", "505", "559", "5Z1", "5Z2", "5Z9"))
+  filter(STRAT %in%(440:495)) 
 
 summer_null <- read.csv("summer_null.csv", header = T) %>% 
   filter(TYPE == 1) %>% 
   select(-X) %>%
   select (SETNO, STRAT, NAME, TOTWGT, TOTNO) %>%
-  filter(!STRAT %in% c("434", "436", "437", "439", "496","483", "497","501", "502", "503", "504", "505", "559", "5Z1", "5Z2", "5Z9"))
+  filter(STRAT %in%(440:495)) 
 
 summer_summaries <- summer_null %>%
   select(STRAT, SETNO) %>%
@@ -350,8 +434,8 @@ summer_SETS <- summer_length %>%
   filter(!is.na(STRAT)) %>%
   group_by(STRAT) %>% 
   summarise(set = length(unique(SETNO)),
-            sum_catch = sum(TOTWGT),
-            mean_totwgt = mean(TOTWGT),
+            sum_catch = sum(TOTWGT * 1000),
+            mean_totwgt = mean(TOTWGT * 1000),
             total_count = length(TOTNO), 
             mean_length = mean(FLEN), 
             max_length = max(FLEN))
@@ -360,7 +444,7 @@ summer_summary <- left_join(summer_summaries, summer_SETS, by="STRAT") %>%
   mutate(occurance = 100*(set/nullset))
 
 summer_summary %>%
-  kbl(caption = "Table 10 Summary for the Summer RV Survey", col.names = c(
+  kbl(caption = "Table 14 Summary for the Summer RV Survey", col.names = c(
                                                 "Stratum", 
                                                 "Null sets",
                                                "Sets with wolffish caught", 
@@ -374,7 +458,7 @@ summer_summary %>%
 
 ```
 
-```{r, fig.cap = "Summary for Summer RV Survey based on NAFO area", echo = FALSE, message=FALSE}
+```{r, echo = FALSE, message=FALSE}
 summer_length <- read.csv("summer_lengths.csv", header = T) %>% 
   filter(TYPE == 1) %>% 
   select(-X) %>%
@@ -405,8 +489,8 @@ summer_SETS <- summer_length %>%
   select(STRAT, NAME, SETNO, TOTWGT, TOTNO, FLEN)%>%
   group_by(NAME) %>% 
   summarise(set = length(unique(SETNO)),
-            sum_catch = sum(TOTWGT),
-            mean_totwgt = mean(TOTWGT),
+            sum_catch = sum(TOTWGT * 1000),
+            mean_totwgt = mean(TOTWGT * 1000),
             total_count = length(TOTNO), 
             mean_length = mean(FLEN), 
             max_length = max(FLEN),
@@ -418,7 +502,7 @@ summer_summary <- left_join(summer_summaries, summer_SETS, by="NAME") %>%
   mutate(occurance = 100*(set/nullset))
 
 summer_summary %>%
-  kbl(caption = "Table 11 Summary for the Summer RV Survey based on NAFO area", col.names = c(
+  kbl(caption = "Table 15 Summary for the Summer RV Survey based on NAFO area", col.names = c(
                                                 "Stratum", 
                                                 "Null sets",
                                                "Sets with wolffish caught", 
@@ -432,7 +516,7 @@ summer_summary %>%
 
 ```
 
-```{r, fig.cap = "Summary for Georges Bank Survey", echo = FALSE, message=FALSE}
+```{r, echo = FALSE, message=FALSE}
 
 georges_length <- read.csv("georges_lengths.csv", header = T) %>% 
   filter(TYPE == 1) %>% 
@@ -457,8 +541,8 @@ georges_SETS <- georges_length %>%
   filter(!is.na(STRAT)) %>%
   group_by(STRAT) %>% 
   summarise(set = length(unique(SETNO)),
-            sum_catch = sum(TOTWGT),
-            mean_totwgt = mean(TOTWGT),
+            sum_catch = sum(TOTWGT * 1000),
+            mean_totwgt = mean(TOTWGT * 1000),
             total_count = length(TOTNO), 
             mean_length = mean(FLEN), 
             max_length = max(FLEN)
@@ -468,7 +552,7 @@ georges_summary <- left_join(georges_summaries, georges_SETS, by="STRAT") %>%
   mutate(occurance = 100*(set/nullset))
 
 georges_summary %>%
-  kbl(caption = "Table 12 Summary for the Georges Bank RV Survey", col.names = c(
+  kbl(caption = "Table 16 Summary for the Georges Bank RV Survey", col.names = c(
                                                 "Stratum", 
                                                 "Null sets",
                                                "Sets with wolffish caught", 
@@ -481,8 +565,7 @@ georges_summary %>%
   kable_classic(full_width = T)
 ```
 
-
-```{r, fig.cap = "Summary for Spring 4X RV Survey", echo = FALSE, message=FALSE }
+```{r, echo = FALSE, message=FALSE }
 
 
 spring4x_length <- read.csv("spring4x_lengths.csv", header = T) %>%
@@ -509,8 +592,8 @@ spring4X_SETS <- spring4x_length %>%
   filter(!is.na(STRAT)) %>%
   group_by(STRAT) %>% 
   summarise(set = length(unique(SETNO)),
-            sum_catch = sum(TOTWGT),
-            mean_totwgt = mean(TOTWGT),
+            sum_catch = sum(TOTWGT*1000) ,
+            mean_totwgt = mean(TOTWGT*1000),
             total_count = length(TOTNO), 
             mean_length = mean(FLEN), 
             max_length = max(FLEN)
@@ -520,7 +603,7 @@ spring4X_summary <- left_join(spring4X_summaries, spring4X_SETS, by="STRAT") %>%
   mutate(occurance = 100*(set/nullset))
 
 spring4X_summary %>%
-  kbl(caption = "Table 13 Summary for the Spring 4X RV Survey", col.names = c(
+  kbl(caption = "Table 17 Summary for the Spring 4X RV Survey", col.names = c(
                                                 "Stratum", 
                                                 "Null sets",
                                                "Sets with wolffish caught", 
@@ -536,4 +619,6 @@ spring4X_summary %>%
 
 
 
+
+=======
 
