@@ -54,6 +54,10 @@ redfish.csv
 isdb_null.csv
 isdb_lengths.csv
 isdb.csv
+<<<<<<< HEAD
+summaries.html
+
+=======
 swain and sinclair d95 DWAO.r
 WolffishAssessmentDraft.pdf
 summaries.pdf
@@ -61,3 +65,4 @@ WolffishAssessmentDraft.html
 snow_eco.csv
 snow_eco_null.csv
 summaries.log
+>>>>>>> 39d25958380abdbab6a1e1773194f34b192bebfb

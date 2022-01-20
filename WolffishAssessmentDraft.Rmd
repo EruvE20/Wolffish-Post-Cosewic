@@ -19,12 +19,13 @@ knitr::opts_chunk$set(echo = F, message=F, warning=F, error = F, prompt = F, res
 
 ```{r, include = FALSE}
 #Set working directory and load libraries
-setwd("C:/Users/TSITRINL/Documents/SARA/Wolffish/Data")
-data.dir="C:/DFO-MPO/MarDataWrangling/wrangledData"
+setwd("C:/Users/SILVERK/Documents/Wolffish-documents/Wolffish-Post-Cosewic")
+#data.dir="C:/DFO-MPO/MarDataWrangling/wrangledData"
 
-library(Mar.datawrangling)
+#library(Mar.datawrangling)
 library(gridExtra)
 library(tidyverse)
+library(ggplot2)
 
 # RV Database -------------------------------------------------------------
 # import and clean data 
@@ -105,11 +106,18 @@ redfish_null <- read.csv("redfish_null.csv", header = T) %>%
 # Research Vessel Surveys
 ### Distribution of Wolffish in RV Surveys
 ```{r, include = FALSE}
+#install.packages("sp")
+#install.packages("rgdal")
+#install.packages("mapdata")
+#install.packages("marmap")
+#install.packages("maptools")
+#install.packages("ggpubr")
 library(sp)
 library(rgdal)
 library(mapdata)
 library(marmap)
 library(maptools)
+library(ggpubr)
 
 
 NAFODivisions <- rgdal::readOGR(dsn="Divisions.shp")
@@ -668,6 +676,7 @@ d <- spring %>%
 
 e <- summer %>% 
   filter(TYPE == 1) %>% 
+  filter(STRAT %in%(440:495)) %>% 
   select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
 f <- fall %>% 
@@ -711,6 +720,7 @@ d <- spring_null %>%
 
 e <- summer_null %>% 
   filter(TYPE == 1) %>% 
+   filter(STRAT %in%(440:495)) %>% 
   select(YEAR, MISSION, SETNO, SDATE, lat = LATITUDE, long = LONGITUDE, STRAT, AREA, GEAR, DUR, DIST, SPEED, SAMPWGT, TOTWGT, TOTNO, SURVEY)
 
 f <- fall_null %>% 
@@ -780,7 +790,7 @@ total <- summary_strat%>%
             area_occupied = sum(area_occupied),
             percent_area = (area_occupied/total_area)*100,
             occurance = mean(occurance))
-
+#install.packages('zoo')
 library(zoo)
 ggplot(total, aes(x=YEAR, y=biomass))+
   geom_point()+
@@ -1179,6 +1189,7 @@ n <- fall_lengths %>%
 
 #SUMMER 
 o <- summer_lengths %>% 
+  filter(STRAT %in%(440:495)) %>% 
   ggplot(aes(FLEN))+
   geom_histogram(binwidth = 5, col="black", fill="black", alpha=.2)+
   labs(y="Frequency (count)", x='Length (cm)')+
@@ -1378,7 +1389,7 @@ i <- ggplot(total, aes (YEAR, log(abundance))) +
   geom_point(color = 'blue') +
   geom_smooth(method = 'lm', se = FALSE, color = 'black') +
   theme_classic() +
-  labs(x="Year", y="Log (count)", title="Geores total")
+  labs(x="Year", y="Log (count)", title="Georges total")
 
 gridExtra::grid.arrange(a,b,c,d,e,f,g,h,i, nrow=3, ncol = 3)
 ```
@@ -1771,7 +1782,7 @@ ggplot(cpue, aes(YEAR, CPUE))+
   geom_point()+
   geom_line()+
   theme_classic()+
-  labs(title = "Sentinel Longline Survey CPUE",
+  labs(title = "4 VsW Sentinel Longline Survey CPUE",
        x = 'Year',
        y = 'CPUE (kg/1000 hooks)')
 ```
@@ -1797,6 +1808,39 @@ ggplot(cpue, aes(YEAR, CPUE))+
        y = 'Mean Catch (kg) per tow')
 ```
   
+```{r, fig.cap=" Total weight of Atlantic wolffish landings for Industry and Commerical Surveys", fig.align='center' }
+landings_industrial <- read.csv("isdb.csv", header = T) %>%
+  select(-X) %>%
+  filter(TRIP_TYPE %in% c( "COD", "HADDOCK", "POLLOCK", "CRAB", "FLATFISH", "HALIBUT", "LOBSTER", "REDFISH", "SCALLOP", "SHRIMP")) %>%
+  select(YEAR, STRATUM_ID, TRIPCD_ID, SET_NO, EST_KEPT_WT, TRIP_TYPE) %>%
+  replace(is.na(.), 0) %>%
+  group_by(YEAR) %>%
+  summarize(total_wt = sum(EST_KEPT_WT), 
+            triptype = factor (TRIP_TYPE))
+
+landings_commericalsurveys <- read.csv("isdb.csv", header = T) %>%
+  select(-X) %>%
+  filter(TRIP_TYPE %in% c( "4VN SENTINEL SURVEY", "4VSW SENTINEL PROGRAM", "HALIBUT LONGLINE SURVEY", "SNOWCRAB SURVEY", "LOBSTER SURVEY")) %>%
+  select(YEAR, STRATUM_ID, TRIPCD_ID, SET_NO, EST_KEPT_WT, TRIP_TYPE) %>%
+  replace(is.na(.), 0) %>%
+  group_by(YEAR) %>%
+  summarize(total_wt = sum(EST_KEPT_WT), 
+            triptype = factor (TRIP_TYPE))
+
+l_industrial <- landings_industrial %>%
+  ggplot(aes(x=YEAR, y= log(total_wt), fill=triptype)) + 
+  geom_bar( stat="identity") +
+  theme_classic() 
+
+l_commerical <- landings_commericalsurveys %>%
+  ggplot(aes(x=YEAR, y= log(total_wt), fill=triptype)) + 
+  geom_bar( stat="identity") +
+  theme_classic()  
+
+grid.arrange(l_industrial, l_commerical)
+
+  
+```
 
 
 
