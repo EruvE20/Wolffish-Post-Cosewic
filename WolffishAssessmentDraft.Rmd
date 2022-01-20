@@ -635,7 +635,6 @@ b <- ggplot(bathy, aes(x=x, y=y))+
 
 ggpubr::ggarrange(a,b, nrow=2)
 ```
-=
 
 
 ### Abundance of Wolffish in RV Surveys
@@ -794,7 +793,20 @@ ggplot(total, aes(x=YEAR, y=biomass))+
   theme_classic()+
   labs(x = "Year", y = "Biomass (tonnes)")
 ```
-
+  
+```{r, fig.cap="Weighted area occupied of Atlantic wolffish in the 4VsW RV Survey, 1986-2010, with three-year running mean (blue).", fig.align='center'}
+ggplot(total, aes(x=YEAR, y=area_occupied))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  # geom_smooth(method = "loess", se = F)+
+  geom_point(aes(y=rollmean(area_occupied, 3, na.pad = T)),
+             col="blue", size=2)+
+  geom_line(aes(y=rollmean(area_occupied, 3, na.pad = T)),
+            col="blue")+
+  theme_classic()+
+  labs(x = "Year", y = "Stratified Area Occupied")
+```
+  
 ```{r, fig.cap="Stratified abundance of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the 4VsW RV Survey, 1986-2010, with three-year running means.", fig.align='center'}
 abun <- spring4VsW_lengths %>% 
   mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
@@ -819,31 +831,18 @@ ggplot(total, aes(x=YEAR, y=abundance, shape=maturity))+
   geom_point()+
   geom_line(alpha=0.3)+
   # geom_smooth(method = "loess", se = F)+
-  geom_point(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_point(data=totalm, aes(y=rollmean(abundance, 3, na.pad = T)),
              size=2, color="#00D712")+
-  geom_line(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_line(data=totalm, aes(y=rollmean(abundance, 3, na.pad = T)),
             color = "#00D712", size=1)+
-    geom_point(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+    geom_point(data=totali, aes(y=rollmean(abundance, 3, na.pad = T)),
              size=2, color="blue")+
-  geom_line(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_line(data=totali, aes(y=rollmean(abundance, 3, na.pad = T)),
             color = "blue", size=1)+
   theme_classic()+
   guides(shape = guide_legend(override.aes = list(color = c("blue", "#00D712"))))+
   scale_y_continuous(labels=scales::comma)+
   labs(x = "Year", y = "Number at Length")
-```
-  
-```{r, fig.cap="Weighted area occupied of Atlantic wolffish in the 4VsW RV Survey, 1986-2010, with three-year running mean (blue).", fig.align='center'}
-ggplot(total, aes(x=YEAR, y=area_occupied))+
-  geom_point()+
-  geom_line(alpha=0.3)+
-  # geom_smooth(method = "loess", se = F)+
-  geom_point(aes(y=rollmean(area_occupied, 3, na.pad = T)),
-             col="blue", size=2)+
-  geom_line(aes(y=rollmean(area_occupied, 3, na.pad = T)),
-            col="blue")+
-  theme_classic()+
-  labs(x = "Year", y = "Stratified Area Occupied")
 ```
    
 ```{r, fig.cap="Stratified biomass of Atlantic wolffish in the 4X RV Survey, 2012-2020, with two-year running mean (blue).", fig.align='center'}
@@ -889,7 +888,20 @@ ggplot(total, aes(x=YEAR, y=biomass))+
   theme_classic()+
   labs(x = "Year", y = "Biomass (tonnes)")
 ```
-
+  
+```{r, fig.cap="Weighted area occupied of Atlantic wolffish in the 4X RV Survey, 2012-2020, with two-year running means.", fig.align='center'}
+ggplot(total, aes(x=YEAR, y=area_occupied))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  # geom_smooth(method = "loess", se = F)+
+  geom_point(aes(y=rollmean(area_occupied, 2, na.pad = T)),
+             col="blue", size=2)+
+  geom_line(aes(y=rollmean(area_occupied, 2, na.pad = T)),
+            col="blue")+
+  theme_classic()+
+  labs(x = "Year", y = "Stratified Area Occupied")
+```
+  
 ```{r, fig.cap="Stratified abundance of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the 4X RV Survey, 2012-2020, with two-year running means.", fig.align='center'}
 abun <- spring4x_lengths %>% 
   mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
@@ -926,20 +938,7 @@ ggplot(total, aes(x=YEAR, y=abundance, shape=maturity))+
   scale_y_continuous(labels=scales::comma)+
   labs(x = "Year", y = "Number at Length")
 ```
-  
-```{r, fig.cap="Weighted area occupied of Atlantic wolffish in the 4X RV Survey, 2012-2020, with two-year running means.", fig.align='center'}
-ggplot(total, aes(x=YEAR, y=area_occupied))+
-  geom_point()+
-  geom_line(alpha=0.3)+
-  # geom_smooth(method = "loess", se = F)+
-  geom_point(aes(y=rollmean(area_occupied, 2, na.pad = T)),
-             col="blue", size=2)+
-  geom_line(aes(y=rollmean(area_occupied, 2, na.pad = T)),
-            col="blue")+
-  theme_classic()+
-  labs(x = "Year", y = "Stratified Area Occupied")
-```
-  
+
 ```{r, fig.cap="Stratified biomass of Atlantic wolffish in the Summer RV Survey, 1970-2021, with three-year running mean (blue).", fig.align='center'}
 strat <- summer_null %>% 
   filter(STRAT %in%(440:495)) %>% 
@@ -977,14 +976,27 @@ ggplot(total, aes(x=YEAR, y=biomass))+
   geom_point()+
   geom_line(alpha=0.3)+
   #geom_smooth(method = "loess", se = F)+
-  geom_point(aes(y=rollmean(biomass, 5, na.pad = T)),
+  geom_point(aes(y=rollmean(biomass, 3, na.pad = T)),
              col="blue", size=2)+
-  geom_line(aes(y=rollmean(biomass, 5, na.pad = T)),
+  geom_line(aes(y=rollmean(biomass, 3, na.pad = T)),
             col="blue")+
   theme_classic()+
   labs(x = "Year", y = "Biomass (tonnes)")
 ```
-
+  
+```{r, fig.cap="Weighted area occupied of Atlantic wolffish in the Summer RV Survey, 1970-2021, with three-year running mean (blue).", fig.align='center'}
+ggplot(total, aes(x=YEAR, y=area_occupied))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  # geom_smooth(method = "loess", se = F)+
+  geom_point(aes(y=rollmean(area_occupied, 3, na.pad = T)),
+             col="blue", size=2)+
+  geom_line(aes(y=rollmean(area_occupied, 3, na.pad = T)),
+            col="blue")+
+  theme_classic()+
+  labs(x = "Year", y = "Stratified Area Occupied")
+```
+   
 ```{r, fig.cap="Stratified abundance of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the Summer RV Survey, 1970-2021, with three-year running means.", fig.align='center'}
 abun <- summer_lengths %>% 
   mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
@@ -1009,33 +1021,20 @@ ggplot(total, aes(x=YEAR, y=abundance, shape=maturity))+
   geom_point()+
   geom_line(alpha=0.3)+
   # geom_smooth(method = "loess", se = F)+
-  geom_point(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_point(data=totalm, aes(y=rollmean(abundance, 3, na.pad = T)),
              size=2, color="#00D712")+
-  geom_line(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_line(data=totalm, aes(y=rollmean(abundance, 3, na.pad = T)),
             color = "#00D712", size=1)+
-    geom_point(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+    geom_point(data=totali, aes(y=rollmean(abundance, 3, na.pad = T)),
              size=2, color="blue")+
-  geom_line(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_line(data=totali, aes(y=rollmean(abundance, 3, na.pad = T)),
             color = "blue", size=1)+
   theme_classic()+
   guides(shape = guide_legend(override.aes = list(color = c("blue", "#00D712"))))+
   scale_y_continuous(labels=scales::comma)+
   labs(x = "Year", y = "Number at Length")
 ```
-  
-```{r, fig.cap="Weighted area occupied of Atlantic wolffish in the Summer RV Survey, 1970-2021, with three-year running mean (blue).", fig.align='center'}
-ggplot(total, aes(x=YEAR, y=area_occupied))+
-  geom_point()+
-  geom_line(alpha=0.3)+
-  # geom_smooth(method = "loess", se = F)+
-  geom_point(aes(y=rollmean(area_occupied, 3, na.pad = T)),
-             col="blue", size=2)+
-  geom_line(aes(y=rollmean(area_occupied, 3, na.pad = T)),
-            col="blue")+
-  theme_classic()+
-  labs(x = "Year", y = "Stratified Area Occupied")
-```
-   
+
 ```{r, fig.cap="Stratified biomass of Atlantic wolffish in the Georges Bank RV Survey, 1987-2021, with three-year running mean (blue).", fig.align='center'}
 strat <- georges_null %>% 
   group_by(YEAR, STRAT) %>% 
@@ -1071,14 +1070,27 @@ ggplot(total, aes(x=YEAR, y=biomass))+
   geom_point()+
   geom_line(alpha=0.3)+
   #geom_smooth(method = "loess", se = F)+
-  geom_point(aes(y=rollmean(biomass, 5, na.pad = T)),
+  geom_point(aes(y=rollmean(biomass, 3, na.pad = T)),
              col="blue", size=2)+
-  geom_line(aes(y=rollmean(biomass, 5, na.pad = T)),
+  geom_line(aes(y=rollmean(biomass, 3, na.pad = T)),
             col="blue")+
   theme_classic()+
   labs(x = "Year", y = "Biomass (tonnes)")
 ```
 
+```{r, fig.cap="Weighted area occupied of Atlantic wolffish in the Georges Bank RV Survey, 1987-2021, with three-year running mean (blue).", fig.align='center'}
+ggplot(total, aes(x=YEAR, y=area_occupied))+
+  geom_point()+
+  geom_line(alpha=0.3)+
+  # geom_smooth(method = "loess", se = F)+
+  geom_point(aes(y=rollmean(area_occupied, 3, na.pad = T)),
+             col="blue", size=2)+
+  geom_line(aes(y=rollmean(area_occupied, 3, na.pad = T)),
+            col="blue")+
+  theme_classic()+
+  labs(x = "Year", y = "Stratified Area Occupied")
+```
+  
 ```{r, fig.cap="Stratified abundance of immature (<53 cm) and mature (>53 cm) Atlantic wolffish in the Georges Bank RV Survey, 1987-2021, with three-year running means.", fig.align='center'}
 abun <- georges_lengths %>% 
   mutate(maturity = ifelse(FLEN > 53, "mature", "immature")) %>% 
@@ -1103,13 +1115,13 @@ ggplot(total, aes(x=YEAR, y=abundance, shape=maturity))+
   geom_point()+
   geom_line(alpha=0.3)+
   # geom_smooth(method = "loess", se = F)+
-  geom_point(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_point(data=totalm, aes(y=rollmean(abundance, 3, na.pad = T)),
              size=2, color="#00D712")+
-  geom_line(data=totalm, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_line(data=totalm, aes(y=rollmean(abundance, 3, na.pad = T)),
             color = "#00D712", size=1)+
-    geom_point(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+    geom_point(data=totali, aes(y=rollmean(abundance, 3, na.pad = T)),
              size=2, color="blue")+
-  geom_line(data=totali, aes(y=rollmean(abundance, 5, na.pad = T)),
+  geom_line(data=totali, aes(y=rollmean(abundance, 3, na.pad = T)),
             color = "blue", size=1)+
   theme_classic()+
   guides(shape = guide_legend(override.aes = list(color = c("blue", "#00D712"))))+
@@ -1701,6 +1713,23 @@ ggplot(isdb_summary, aes(YEAR, occurance, colour=TRIP_TYPE))+
   
 
 ### Wolffish Biomass in Industry Surveys
+```{r, fig.cap="Catch per Unit Effort of Atlantic wolffish in the Snowcrab Fixed Survey", fig.align='center'}
+cpue <- isdb %>% 
+  filter(TRIPCD_ID == 7061) %>% 
+  filter(SETCD_ID == 4) %>% 
+  filter(YEAR > 2004) %>% 
+  group_by(YEAR) %>%   
+  summarise(CPUE = mean(EST_COMBINED_WT))
+  
+ggplot(cpue, aes(YEAR, CPUE))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  labs(title = "Snowcrab Survey CPUE",
+       x = 'Year',
+       y = 'Mean Catch (kg) per tow')
+```
+  
 ```{r, fig.cap="Length Frequency distributions of Atlantic wolffish in the Snowcrab Environmental Survey", fig.align='center'}
 isdb_lengths %>% 
   filter(TRIPCD_ID == 7061) %>% 
@@ -1731,7 +1760,7 @@ ggplot(cpue, aes(YEAR, CPUE))+
 ```
   
 ```{r, fig.cap="Catch per Unit Effort of Atlantic wolffish in the 4VSW Sentinel Longline Survey", fig.align='center'}
-pue <- sentinel %>% 
+cpue <- sentinel %>% 
   select(YEAR, EST_COMBINED_WT, NUM_HOOK_HAUL) %>% 
   mutate(sum = (EST_COMBINED_WT/NUM_HOOK_HAUL)*1000) %>% 
   group_by(YEAR) %>%   
@@ -1763,9 +1792,9 @@ ggplot(cpue, aes(YEAR, CPUE))+
   geom_line()+
   theme_classic()+
   geom_vline(xintercept = 2012, col="blue", linetype="dashed")+
-  labs(title = "ITQ/Lobster Surveys Uncorrected Catch per tow",
+  labs(title = "ITQ/Lobster Surveys Catch per tow",
        x = 'Year',
-       y = 'Catch (kg/tow)')
+       y = 'Mean Catch (kg) per tow')
 ```
   
 
