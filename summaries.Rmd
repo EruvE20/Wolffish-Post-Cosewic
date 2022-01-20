@@ -1,6 +1,6 @@
 ---
 title: "Summary tables"
-output: pdf_document
+output: html_document
 ---
 ```{r, echo = FALSE, message =FALSE}
 library(tidyverse)
@@ -59,6 +59,35 @@ snowcrab_sum_ecosystem %>%
                                                "Mean length of Wolffish", 
                                                "Max Length of Wolffish")) %>%
   kable_classic(full_width = T) 
+
+snowcrab_frequency <- isdb_lengths %>% 
+  filter(TRIPCD_ID ==7061) %>%
+  filter(YEAR != 2004) %>%
+  filter(SETCD_ID == 11) %>%
+  select (YEAR, EST_COMBINED_WT, EST_NUM_CAUGHT,STATION, GEAR, FISH_LENGTH)
+
+snowcrab_frequency %>%
+  ggplot(aes(FISH_LENGTH))+
+  geom_histogram(binwidth = 5, col="black", fill="green", alpha=.2)+
+  labs(y="Frequency (count)", x='Length (cm)')+
+  theme_classic()+
+  theme(text = element_text(size=15),
+        axis.text = element_text(size=15))
+
+```
+
+
+
+```{r, fig.cap = "Summary for the 4X Mobile Survey (ITQ)", echo = FALSE, message=FALSE}
+
+library(dplyr)
+library(ggplot2)
+library(kableExtra)
+
+isdb_lengths <- read.csv('isdb_lengths.csv')
+
+
+
 ```
 
 ```{r, echo = FALSE, message=FALSE}
@@ -356,8 +385,8 @@ Sentinel_4VN_summary_SETID_5 <- isdb_lengths %>%
   group_by(YEAR) %>% 
   summarize(
     sets = length(unique(SET_NO)),
-    sum_wt = sum(EST_COMBINED_WT),
-    mean_weight = mean(EST_COMBINED_WT),
+    sum_wt = sum(EST_COMBINED_WT * 1000),
+    mean_weight = mean(EST_COMBINED_WT * 1000),
     count_caught = length(EST_NUM_CAUGHT), 
     mean_caught = mean(EST_NUM_CAUGHT))
 
@@ -381,17 +410,18 @@ sentinel_total_summary_SETID5 %>%
 ```
 
 ```{r, echo = FALSE, message=FALSE}
+library(dplyr)
 summer_length <- read.csv("summer_lengths.csv", header = T) %>% 
   filter(TYPE == 1) %>% 
   select(-X) %>%
   select (SETNO, STRAT, NAME, TOTWGT, TOTNO, FLEN) %>%
-  filter(!STRAT %in% c("434", "436", "437", "439", "483", "496", "497","501", "502", "503", "504", "505", "559", "5Z1", "5Z2", "5Z9"))
+  filter(STRAT %in%(440:495)) 
 
 summer_null <- read.csv("summer_null.csv", header = T) %>% 
   filter(TYPE == 1) %>% 
   select(-X) %>%
   select (SETNO, STRAT, NAME, TOTWGT, TOTNO) %>%
-  filter(!STRAT %in% c("434", "436", "437", "439", "496","483", "497","501", "502", "503", "504", "505", "559", "5Z1", "5Z2", "5Z9"))
+  filter(STRAT %in%(440:495)) 
 
 summer_summaries <- summer_null %>%
   select(STRAT, SETNO) %>%
@@ -404,8 +434,8 @@ summer_SETS <- summer_length %>%
   filter(!is.na(STRAT)) %>%
   group_by(STRAT) %>% 
   summarise(set = length(unique(SETNO)),
-            sum_catch = sum(TOTWGT),
-            mean_totwgt = mean(TOTWGT),
+            sum_catch = sum(TOTWGT * 1000),
+            mean_totwgt = mean(TOTWGT * 1000),
             total_count = length(TOTNO), 
             mean_length = mean(FLEN), 
             max_length = max(FLEN))
@@ -459,8 +489,8 @@ summer_SETS <- summer_length %>%
   select(STRAT, NAME, SETNO, TOTWGT, TOTNO, FLEN)%>%
   group_by(NAME) %>% 
   summarise(set = length(unique(SETNO)),
-            sum_catch = sum(TOTWGT),
-            mean_totwgt = mean(TOTWGT),
+            sum_catch = sum(TOTWGT * 1000),
+            mean_totwgt = mean(TOTWGT * 1000),
             total_count = length(TOTNO), 
             mean_length = mean(FLEN), 
             max_length = max(FLEN),
@@ -511,8 +541,8 @@ georges_SETS <- georges_length %>%
   filter(!is.na(STRAT)) %>%
   group_by(STRAT) %>% 
   summarise(set = length(unique(SETNO)),
-            sum_catch = sum(TOTWGT),
-            mean_totwgt = mean(TOTWGT),
+            sum_catch = sum(TOTWGT * 1000),
+            mean_totwgt = mean(TOTWGT * 1000),
             total_count = length(TOTNO), 
             mean_length = mean(FLEN), 
             max_length = max(FLEN)
@@ -562,8 +592,8 @@ spring4X_SETS <- spring4x_length %>%
   filter(!is.na(STRAT)) %>%
   group_by(STRAT) %>% 
   summarise(set = length(unique(SETNO)),
-            sum_catch = sum(TOTWGT),
-            mean_totwgt = mean(TOTWGT),
+            sum_catch = sum(TOTWGT*1000) ,
+            mean_totwgt = mean(TOTWGT*1000),
             total_count = length(TOTNO), 
             mean_length = mean(FLEN), 
             max_length = max(FLEN)
@@ -585,3 +615,10 @@ spring4X_summary %>%
                                                "Proportion of Wolffish caught")) %>%
   kable_classic(full_width = T)
 ```
+
+
+
+
+
+=======
+
