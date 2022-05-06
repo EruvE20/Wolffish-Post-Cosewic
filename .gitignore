@@ -56,7 +56,23 @@ isdb_lengths.csv
 isdb.csv
 <<<<<<< HEAD
 summaries.html
-
+01_introduction.Rmd
+02_methods.Rmd
+03_results.Rmd
+04_discussion.Rmd
+05_appendix.Rmd
+06_bibliography.Rmd
+Copy of Sara Species_Wolffish_AllYears_Run21-01-04.xlsx
+LOG EFFORT Wolffish 2002 to 2022.xlsx
+Landed Offload Wolffish 2002 to 2022.xlsx
+Sara Species_Wolffish_AllYears_Run21-01-04.xls
+WOLFFISH_LANDEDOFFLOADBYTRIP_2000-2021.xlsx
+Wolffish Report/
+catch2
+catch2.csv
+catch_by_fishery.csv
+landings.csv
+marmap_coord_-80;35;-50;48_res_1.csv
 =======
 swain and sinclair d95 DWAO.r
 WolffishAssessmentDraft.pdf
